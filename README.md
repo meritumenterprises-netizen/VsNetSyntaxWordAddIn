@@ -1,4 +1,4 @@
-# VS.NET Add-In for Syntax Coloring C#, JavaScript, TypeScript, HTML and Angular in Word
+# Microsoft Word Add-In for Syntax Coloring C#, JavaScript, TypeScript, HTML and Angular
 
 The add-in creates a VS.NET Syntax tab in the Word ribbon for formatting code snippets in C#, HTML, TypeScript, and JavaScript. It uses Roslyn for C# and Serenity.TypeScript for TypeScript to parse and highlight syntax. The add-in is built with VSTO targeting .NET Framework 4.8 and does not require Office.js or a web server.
 
