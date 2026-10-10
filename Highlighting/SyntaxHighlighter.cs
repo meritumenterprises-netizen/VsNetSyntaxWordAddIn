@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Text.RegularExpressions;
 using ColorCode;
 using ColorCode.Common;
 using ColorCode.Parsing;
@@ -35,8 +36,10 @@ namespace VsNetSyntaxWordAddIn.Highlighting
         private int[] colors;
         private bool[] bold;
         private int position;
+        private bool boldHtmlTags;
+        private readonly SyntaxTheme theme;
 
-        public SyntaxHighlighter(SyntaxTheme theme = SyntaxTheme.Light) : base(GetStyles(theme), null) { }
+        public SyntaxHighlighter(SyntaxTheme theme = SyntaxTheme.Light) : base(GetStyles(theme), null) { this.theme = theme; }
 
         public int ForegroundColor => ToWordColor(Styles[ScopeName.PlainText].Foreground);
         public int BackgroundColor => ToWordColor(Styles[ScopeName.PlainText].Background);
@@ -58,7 +61,8 @@ namespace VsNetSyntaxWordAddIn.Highlighting
             switch (languageId)
             {
                 case "CSharp": language = null; break;
-                case "Html": language = Languages.Html; break;
+                case "Html": language = AngularHtmlLanguage.Instance; break;
+                case "Angular": language = AngularHtmlLanguage.Instance; break;
                 case "TypeScript": language = Languages.Typescript; break;
                 case "JavaScript": language = Languages.JavaScript; break;
                 default: throw new ArgumentException("Unsupported language.", nameof(languageId));
@@ -66,6 +70,7 @@ namespace VsNetSyntaxWordAddIn.Highlighting
 
             colors = new int[text.Length];
             bold = new bool[text.Length];
+            boldHtmlTags = languageId == "Html" || languageId == "Angular";
             int foreground = ForegroundColor;
             for (int i = 0; i < colors.Length; i++) colors[i] = foreground;
             position = 0;
@@ -78,6 +83,7 @@ namespace VsNetSyntaxWordAddIn.Highlighting
                 languageParser.Parse(source, language, Write);
                 if (position != text.Length) throw new InvalidOperationException("The highlighter did not preserve source offsets.");
                 if (languageId == "TypeScript") TypeScriptNameHighlighter.Highlight(source, ApplyBold);
+                if (languageId == "Angular") HighlightAngularInterpolations(source);
             }
 
             var spans = new List<HighlightSpan>();
@@ -91,6 +97,21 @@ namespace VsNetSyntaxWordAddIn.Highlighting
             return spans;
         }
 
+        private void HighlightAngularInterpolations(string source)
+        {
+            // Consume comments first so examples inside comments remain comment-colored.
+            foreach (Match match in Regex.Matches(source, @"<!--[\s\S]*?(?:-->|$)|\{\{(?<expression>[\s\S]*?)\}\}"))
+            {
+                Group expression = match.Groups["expression"];
+                if (!expression.Success) continue;
+                ApplyColor(match.Index, 2, ScopeName.HtmlTagDelimiter);
+                ApplyColor(match.Index + match.Length - 2, 2, ScopeName.HtmlTagDelimiter);
+                var expressionHighlighter = new SyntaxHighlighter(theme);
+                foreach (var span in expressionHighlighter.Highlight(expression.Value, "JavaScript"))
+                    for (int i = 0; i < span.Length; i++) colors[expression.Index + span.Start + i] = span.Color;
+            }
+        }
+
         protected override void Write(string parsedSourceCode, IList<Scope> scopes)
         {
             foreach (var scope in scopes) ApplyScope(scope, parsedSourceCode.Length);
@@ -101,6 +122,8 @@ namespace VsNetSyntaxWordAddIn.Highlighting
         {
             if (scope.Index < 0 || scope.Length < 0 || scope.Index + scope.Length > chunkLength)
                 throw new InvalidOperationException("The parser produced an invalid token range.");
+            if (boldHtmlTags && (scope.Name == ScopeName.HtmlElementName || scope.Name == ScopeName.HtmlTagDelimiter))
+                ApplyBold(position + scope.Index, scope.Length);
             if (Styles.Contains(scope.Name))
             {
                 string foreground = Styles[scope.Name].Foreground;

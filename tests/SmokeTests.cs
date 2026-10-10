@@ -24,6 +24,8 @@ internal static class SmokeTests
             CheckThemeColors();
             CheckCSharp12();
             CheckBoldNames();
+            CheckHtmlBoldTags();
+            CheckWordShortcutAvailability();
             if (!args.Contains("--skip-shortcuts")) CheckShortcuts();
             else Console.WriteLine("Shortcut registration checks skipped (hotkeys may be owned by a running Word instance).");
             if (args.Contains("--word")) CheckWord();
@@ -183,36 +185,103 @@ internal static class SmokeTests
     private static bool BoldAt(System.Collections.Generic.IReadOnlyList<HighlightSpan> spans, int offset) =>
         spans.Single(s => s.Start <= offset && s.Start + s.Length > offset).Bold;
 
+    private static void CheckHtmlBoldTags()
+    {
+        const string source = "<div class=\"sample\">text &amp; <my-widget data-id=\"1\" />\r</div>\v<!-- <div> -->";
+        foreach (var theme in new[] { SyntaxTheme.Light, SyntaxTheme.Dark })
+        {
+            var highlighter = new SyntaxHighlighter(theme);
+            var spans = highlighter.Highlight(source, "Html");
+            foreach (int offset in new[] { 0, 1, source.IndexOf("my-widget", StringComparison.Ordinal),
+                source.IndexOf("</div>", StringComparison.Ordinal) + 2 })
+                Assert(BoldAt(spans, offset), "HTML: tag not bold");
+            foreach (string plain in new[] { "class", "sample", "text", "&amp;", "data-id" })
+                Assert(!BoldAt(spans, source.IndexOf(plain, StringComparison.Ordinal)), "HTML: non-tag incorrectly bold: " + plain);
+            Assert(!BoldAt(spans, source.LastIndexOf("div", StringComparison.Ordinal)), "HTML: commented tag bold");
+            Assert(spans.Sum(s => s.Length) == source.Length, "HTML: bold changed offsets");
+            Assert(highlighter.Highlight("const value = 1;", "JavaScript").All(s => !s.Bold), "HTML: bold leaked across language changes");
+            const string interpolation = "<span>{{ true ? 'yes' : 42 }}</span><!-- {{ false }} -->";
+            var interpolationSpans = highlighter.Highlight(interpolation, "Angular");
+            Assert(ColorAt(interpolationSpans, interpolation.IndexOf("true", StringComparison.Ordinal)) != highlighter.ForegroundColor,
+                "Angular: interpolation keyword uncolored");
+            var expressionSpans = new SyntaxHighlighter(theme).Highlight(" true ? 'yes' : 42 ", "JavaScript");
+            Assert(ColorAt(interpolationSpans, interpolation.IndexOf("42", StringComparison.Ordinal)) ==
+                ColorAt(expressionSpans, 16), "Angular: interpolation expression palette differs");
+            Assert(ColorAt(interpolationSpans, interpolation.IndexOf("false", StringComparison.Ordinal)) ==
+                ColorAt(interpolationSpans, interpolation.IndexOf("<!--", StringComparison.Ordinal)), "Angular: interpolation changed comment colors");
+            Assert(interpolationSpans.Sum(s => s.Length) == interpolation.Length, "Angular: interpolation offsets changed");
+            foreach (string angular in new[] {
+                "<button (click)=\"save()\">Save</button>",
+                "<button [disabled]=\"busy\" (click)=\"save()\">Save</button>",
+                "<input [(ngModel)]=\"name\" #editor />",
+                "<div *ngIf=\"visible\" [attr.aria-label]=\"label\">Text</div>",
+                "<button\r(click)=\"save()\"\v[disabled]=\"busy\">Save</button>"
+            })
+            {
+                var angularSpans = highlighter.Highlight(angular, "Angular");
+                int nameEnd = angular.IndexOfAny(new[] { ' ', '\r', '\v' });
+                for (int offset = 0; offset < nameEnd; offset++)
+                    Assert(BoldAt(angularSpans, offset), "HTML: Angular opening tag not bold");
+                Assert(ColorAt(angularSpans, 1) != highlighter.ForegroundColor, "HTML: Angular opening tag uncolored");
+                int close = angular.IndexOf("</", StringComparison.Ordinal);
+                if (close >= 0)
+                    Assert(ColorAt(angularSpans, 1) == ColorAt(angularSpans, close + 2) &&
+                        BoldAt(angularSpans, close + 2), "HTML: Angular opening/closing tag styles differ");
+                Assert(angularSpans.Sum(s => s.Length) == angular.Length, "HTML: Angular offsets changed");
+                int attribute = angular.IndexOfAny(new[] { '(', '[', '*', '#' });
+                Assert(!BoldAt(angularSpans, attribute), "HTML: Angular attribute incorrectly bold");
+            }
+        }
+        Console.WriteLine("HTML: opening/closing/custom tags bold; attributes, values, text and comments normal OK");
+    }
+
     private static void CheckShortcuts()
     {
         bool active = true;
         string applied = null;
         using (var shortcuts = new GlobalSyntaxShortcuts(language => applied = language, () => active))
         {
-            Assert(shortcuts.RegisteredCount == 4, "Shortcuts: native registration failed: " + shortcuts.Status);
+            Assert(shortcuts.RegisteredCount == 5, "Shortcuts: native registration failed: " + shortcuts.Status);
             foreach (var mapping in new[] {
                 new { Key = 0x43, Language = "CSharp" },
                 new { Key = 0x4A, Language = "JavaScript" },
                 new { Key = 0x54, Language = "TypeScript" },
-                new { Key = 0x48, Language = "Html" }
+                new { Key = 0x48, Language = "Html" },
+                new { Key = 0x41, Language = "Angular" }
             })
             {
-                SendMessage(shortcuts.Handle, 0x0312, new IntPtr(mapping.Key), IntPtr.Zero);
+                SendMessage(shortcuts.Handle, 0x0312, new IntPtr(mapping.Key), new IntPtr((mapping.Key << 16) | 7));
                 Assert(applied == mapping.Language, "Shortcuts: native message language mapping failed");
             }
             applied = null;
+            SendMessage(shortcuts.Handle, 0x0312, new IntPtr(0x43), new IntPtr((0x43 << 16) | 3));
+            Assert(applied == null, "Shortcuts: Ctrl+Alt+C incorrectly dispatched");
+            Assert(RegisterHotKey(shortcuts.Handle, 900, 3, 0x43), "Shortcuts: Ctrl+Alt+C was reserved by the add-in");
+            UnregisterHotKey(shortcuts.Handle, 900);
             active = false;
-            SendMessage(shortcuts.Handle, 0x0312, new IntPtr(0x43), IntPtr.Zero);
+            SendMessage(shortcuts.Handle, 0x0312, new IntPtr(0x43), new IntPtr((0x43 << 16) | 7));
             Assert(applied == null, "Shortcuts: formatted outside Word");
             shortcuts.Refresh();
             Assert(shortcuts.RegisteredCount == 0, "Shortcuts: focus loss did not release hotkeys");
             active = true;
             shortcuts.Refresh();
-            Assert(shortcuts.RegisteredCount == 4, "Shortcuts: focus return did not register hotkeys");
+            Assert(shortcuts.RegisteredCount == 5, "Shortcuts: focus return did not register hotkeys");
         }
         using (var shortcuts = new GlobalSyntaxShortcuts(language => { }, () => true))
-            Assert(shortcuts.RegisteredCount == 4, "Shortcuts: disposal did not release hotkeys");
+            Assert(shortcuts.RegisteredCount == 5, "Shortcuts: disposal did not release hotkeys");
         Console.WriteLine("Shortcuts: native registration, dispatch, focus, and cleanup OK");
+    }
+
+    private static void CheckWordShortcutAvailability()
+    {
+        Assert(!GlobalSyntaxShortcuts.MatchesShortcut(0x43, (0x43 << 16) | 3), "Ctrl+Alt+C matched add-in shortcut");
+        Assert(GlobalSyntaxShortcuts.MatchesShortcut(0x43, (0x43 << 16) | 7), "Full C# shortcut rejected");
+        using (var window = new GlobalSyntaxShortcuts(language => { }, () => false))
+        {
+            Assert(RegisterHotKey(window.Handle, 901, 3, 0x43), "Ctrl+Alt+C is reserved globally");
+            UnregisterHotKey(window.Handle, 901);
+        }
+        Console.WriteLine("Word shortcut: Ctrl+Alt+C does not match add-in modifiers and is not globally reserved OK");
     }
 
     private static void CheckWord()
@@ -304,23 +373,33 @@ internal static class SmokeTests
                 Assert(modernRange.Text == modernCode, "Word: C# 12 formatting changed text");
             }
             Console.WriteLine("Word: C# 12 keywords and unchanged text verified in both themes OK");
-            foreach (var language in new[] { "CSharp", "TypeScript" })
+            foreach (var language in new[] { "CSharp", "TypeScript", "Html", "Angular" })
             {
                 string boldCode = language == "CSharp"
                     ? "class Person { public string Name { get; set; } void Greet() { } }\r"
-                    : "class Person { Name: string; Greet(): void { } }\r";
+                    : language == "TypeScript" ? "class Person { Name: string; Greet(): void { } }\r"
+                    : "<button (click)=\"save()\">Save</button>\r";
                 document.Content.Text = boldCode;
                 var boldRange = document.Range(0, boldCode.Length);
                 foreach (var theme in new[] { SyntaxTheme.Light, SyntaxTheme.Dark })
                 {
                     boldRange.Select();
                     WordSelectionFormatter.Format(application, language, theme);
-                    foreach (var name in new[] { "Person", "Name", "Greet" })
+                    foreach (var name in language == "Html" || language == "Angular" ? new[] { "button" } : new[] { "Person", "Name", "Greet" })
                     {
                         int offset = boldCode.IndexOf(name, StringComparison.Ordinal);
                         Assert(document.Range(offset, offset + name.Length).Font.Bold == -1, "Word: name not bold: " + language + " " + name);
                     }
-                    Assert(document.Range(0, 5).Font.Bold == 0, "Word: keyword incorrectly bold");
+                    if (language == "Html" || language == "Angular")
+                    {
+                        Assert(document.Range(8, 15).Font.Bold == 0, "Word: HTML attribute incorrectly bold");
+                        int close = boldCode.IndexOf("</", StringComparison.Ordinal);
+                        Assert(document.Range(close, close + 9).Font.Bold == -1, "Word: HTML closing tag not bold");
+                        Assert(document.Range(1, 7).Font.Color == document.Range(close + 2, close + 8).Font.Color,
+                            "Word: Angular opening/closing tag colors differ");
+                    }
+                    else
+                        Assert(document.Range(0, 5).Font.Bold == 0, "Word: keyword incorrectly bold");
                     Assert(boldRange.Text == boldCode, "Word: bold changed text");
                     Assert(document.Undo(), "Word: bold undo failed");
                 }
@@ -329,7 +408,7 @@ internal static class SmokeTests
                 WordSelectionFormatter.Format(application, "JavaScript");
                 Assert(boldRange.Font.Bold == 0, "Word: bold leaked when changing languages");
             }
-            Console.WriteLine("Word: C#/TypeScript bold names, reset and grouped undo verified in both themes OK");
+            Console.WriteLine("Word: C#/TypeScript bold names and HTML tags, reset and grouped undo verified in both themes OK");
         }
         finally
         {
@@ -355,13 +434,13 @@ internal static class SmokeTests
             IntPtr window = GetAncestor(new IntPtr(application.ActiveWindow.Hwnd), 2);
             Assert(SetForegroundWindow(window), "Shortcut input: could not activate temporary Word window");
             var registrationDeadline = DateTime.UtcNow.AddSeconds(5);
-            while (!((string)diagnostics.Status).StartsWith("Registered=4/4") && DateTime.UtcNow < registrationDeadline)
+            while (!((string)diagnostics.Status).StartsWith("Registered=5/5") && DateTime.UtcNow < registrationDeadline)
             {
                 System.Windows.Forms.Application.DoEvents();
                 Thread.Sleep(50);
             }
-            Assert(((string)diagnostics.Status).StartsWith("Registered=4/4"), "Shortcut input: hotkeys were not registered");
-            foreach (ushort key in new ushort[] { 0x43, 0x4A, 0x54, 0x48 })
+            Assert(((string)diagnostics.Status).StartsWith("Registered=5/5"), "Shortcut input: hotkeys were not registered");
+            foreach (ushort key in new ushort[] { 0x43, 0x4A, 0x54, 0x48, 0x41 })
             {
                 var selection = document.Range(0, document.Content.End - 1);
                 selection.Font.Name = "Courier New";
@@ -409,6 +488,12 @@ internal static class SmokeTests
     private struct MouseInput { public int X, Y; public uint Data, Flags, Time; public UIntPtr Extra; }
     [DllImport("user32.dll", SetLastError = true)]
     private static extern uint SendInput(uint count, Input[] input, int size);
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool RegisterHotKey(IntPtr window, int id, uint modifiers, uint key);
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool UnregisterHotKey(IntPtr window, int id);
     [DllImport("user32.dll")]
     private static extern IntPtr SendMessage(IntPtr window, uint message, IntPtr wParam, IntPtr lParam);
     [DllImport("user32.dll")]

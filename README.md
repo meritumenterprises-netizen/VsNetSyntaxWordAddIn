@@ -11,6 +11,7 @@ Language dropdown:
 | JavaScript |
 | TypeScript | 
 | HTML |
+| Angular |
 
 
 | Theme | Description |
@@ -32,6 +33,7 @@ Runtime formatting is performed by either selections from the VS.NET Syntax Ribb
 | Ctrl+Alt+Shift+T | Format text as TypeScript syntax, use background color from the VS.NET Syntax Ribbon tab |
 | Ctrl+Alt+Shift+J | Format text as JavaScript syntax, use background color from the VS.NET Syntax Ribbon tab |
 | Ctrl+Alt+Shift+H | Format text as HTML syntax, use background color from the VS.NET Syntax Ribbon tab |
+| Ctrl+Alt+Shift+A | Format text as Angular syntax, use background color from the VS.NET Syntax Ribbon tab |
 
 # VS.NET Syntax Word Add-in
 

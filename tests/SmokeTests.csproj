@@ -23,6 +23,7 @@
     <Compile Include="SmokeTests.cs" />
     <Compile Include="..\GlobalSyntaxShortcuts.cs"><Link>GlobalSyntaxShortcuts.cs</Link></Compile>
     <Compile Include="..\Highlighting\SyntaxHighlighter.cs"><Link>SyntaxHighlighter.cs</Link></Compile>
+    <Compile Include="..\Highlighting\AngularHtmlLanguage.cs"><Link>AngularHtmlLanguage.cs</Link></Compile>
     <Compile Include="..\Highlighting\CSharpSyntaxHighlighter.cs"><Link>CSharpSyntaxHighlighter.cs</Link></Compile>
     <Compile Include="..\Highlighting\TypeScriptNameHighlighter.cs"><Link>TypeScriptNameHighlighter.cs</Link></Compile>
     <Compile Include="..\WordSelectionFormatter.cs"><Link>WordSelectionFormatter.cs</Link></Compile>

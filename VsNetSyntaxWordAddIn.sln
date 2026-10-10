@@ -1,5 +1,5 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 18
+# SQL Server Management Studio Version 22
 VisualStudioVersion = 18.0.0.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VsNetSyntaxWordAddIn", "VsNetSyntaxWordAddIn.csproj", "{9C98A76C-7F28-490B-A57B-056725B1802B}"
@@ -7,12 +7,23 @@ EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
+		Default|Any CPU = Default|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{9C98A76C-7F28-490B-A57B-056725B1802B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{9C98A76C-7F28-490B-A57B-056725B1802B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9C98A76C-7F28-490B-A57B-056725B1802B}.Default|Any CPU.ActiveCfg = Release|Any CPU
 		{9C98A76C-7F28-490B-A57B-056725B1802B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9C98A76C-7F28-490B-A57B-056725B1802B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A893BA00-CE5B-4EE9-AD18-34E3B79BD3BF}.Debug|Any CPU.ActiveCfg = Default
+		{A893BA00-CE5B-4EE9-AD18-34E3B79BD3BF}.Default|Any CPU.ActiveCfg = Default
+		{A893BA00-CE5B-4EE9-AD18-34E3B79BD3BF}.Release|Any CPU.ActiveCfg = Default
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {674B4965-C382-4F03-A0FB-53FEFFFBA6FA}
 	EndGlobalSection
 EndGlobal

@@ -17,8 +17,9 @@ namespace VsNetSyntaxWordAddIn
 
     internal sealed class GlobalSyntaxShortcuts : NativeWindow, IDisposable
     {
-        private const uint Modifiers = 0x0001 | 0x0002 | 0x0004 | 0x4000;
-        private static readonly uint[] Keys = { 0x43, 0x4A, 0x54, 0x48 };
+        private const uint ShortcutModifiers = 0x0001 | 0x0002 | 0x0004; // Alt + Ctrl + Shift; Ctrl+Alt belongs to Word.
+        private const uint Modifiers = ShortcutModifiers | 0x4000;
+        private static readonly uint[] Keys = { 0x43, 0x4A, 0x54, 0x48, 0x41 };
         private readonly bool[] registered = new bool[Keys.Length];
         private readonly Action<string> apply;
         private readonly Func<bool> wordActive;
@@ -41,7 +42,7 @@ namespace VsNetSyntaxWordAddIn
             }
         }
 
-        internal string Status => "Registered=" + RegisteredCount + "/4; Dispatched=" + dispatched +
+        internal string Status => "Registered=" + RegisteredCount + "/" + Keys.Length + "; Dispatched=" + dispatched +
             "; LastError=" + lastError;
 
         internal GlobalSyntaxShortcuts(Action<string> apply, Func<bool> wordActive = null)
@@ -83,7 +84,8 @@ namespace VsNetSyntaxWordAddIn
             if (message.Msg == 0x0312 && !disposed)
             {
                 int index = Array.IndexOf(Keys, (uint)message.WParam.ToInt32());
-                if (index >= 0 && registered[index] && wordActive() && !applying)
+                bool exactShortcut = MatchesShortcut((uint)message.WParam.ToInt32(), message.LParam.ToInt64());
+                if (index >= 0 && exactShortcut && registered[index] && wordActive() && !applying)
                 {
                     applying = true;
                     try
@@ -102,6 +104,12 @@ namespace VsNetSyntaxWordAddIn
             base.WndProc(ref message);
         }
 
+        internal static bool MatchesShortcut(uint key, long data)
+        {
+            uint hotkey = unchecked((uint)data);
+            return (hotkey & 0xFFFF) == ShortcutModifiers && (hotkey >> 16) == key;
+        }
+
         private static string LanguageForKey(uint key)
         {
             switch (key)
@@ -110,6 +118,7 @@ namespace VsNetSyntaxWordAddIn
                 case 0x4A: return "JavaScript";
                 case 0x54: return "TypeScript";
                 case 0x48: return "Html";
+                case 0x41: return "Angular";
                 default: throw new ArgumentOutOfRangeException(nameof(key));
             }
         }

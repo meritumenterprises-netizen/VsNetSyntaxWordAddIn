@@ -29,6 +29,7 @@ namespace VsNetSyntaxWordAddIn
             Microsoft.Office.Tools.Ribbon.RibbonDropDownItem ribbonDropDownItemImpl7 = this.Factory.CreateRibbonDropDownItem();
             Microsoft.Office.Tools.Ribbon.RibbonDropDownItem ribbonDropDownItemImpl8 = this.Factory.CreateRibbonDropDownItem();
             Microsoft.Office.Tools.Ribbon.RibbonDropDownItem ribbonDropDownItemImpl9 = this.Factory.CreateRibbonDropDownItem();
+            Microsoft.Office.Tools.Ribbon.RibbonDropDownItem angularLanguage = this.Factory.CreateRibbonDropDownItem();
             this.VsNetSyntaxTab = this.Factory.CreateRibbonTab();
             this.SyntaxGroup = this.Factory.CreateRibbonGroup();
             this.ApplySyntax = this.Factory.CreateRibbonButton();
@@ -74,6 +75,8 @@ namespace VsNetSyntaxWordAddIn
             this.SyntaxLanguage.Items.Add(ribbonDropDownItemImpl2);
             this.SyntaxLanguage.Items.Add(ribbonDropDownItemImpl3);
             this.SyntaxLanguage.Items.Add(ribbonDropDownItemImpl4);
+            angularLanguage.Label = "Angular";
+            this.SyntaxLanguage.Items.Add(angularLanguage);
             this.SyntaxLanguage.Label = "Language";
             this.SyntaxLanguage.Name = "SyntaxLanguage";
             this.SyntaxLanguage.SizeString = "TypeScript  ";
