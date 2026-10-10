@@ -6,13 +6,38 @@ The add-in looks like below:
 
 Language dropdown:
 
-| Language |
-| --- |
-| C# 12 |
-| JavaScript |
-| TypeScript |
-| HTML |
-| Angular |
+<table>
+<tr>
+<td width="200" align="center">
+<b>Language</b>
+</td>
+</tr>
+<tr>
+<td>
+C# 12
+</td>
+</tr>
+<tr>
+<td>
+JavaScript
+</td>
+</tr>
+<tr>
+<td>
+TypeScript
+</td>
+</tr>
+<tr>
+<td>
+HTML
+</td>
+</tr>
+<tr>
+<td>
+Angular
+</td>
+</tr>
+</table>
 
 Themes:
 
@@ -29,6 +54,7 @@ Themes:
 | Green | Light-green background (used for correct code |
 
 Runtime formatting is performed by either selections from the VS.NET Syntax Ribbon tab, or by using keyboard shortcuts:
+
 | Keyboard shortcut | Meaning |
 | -- | -- |
 | Ctrl+Alt+Shift+C | Format text as C# 12 syntax, use background color from the VS.NET Syntax Ribbon tab |
