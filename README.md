@@ -19,12 +19,14 @@ Language dropdown:
 
 
 | Background | Description |
+| -- | -- |
 | Normal | No change in background color |
 | Red | Light-red background (used for incorrect code) |
 | Green | Light-green background (used for correct code |
 
 Runtime formatting is performed by either selections from the VS.NET Syntax Ribbon tab, or by using keyboard shortcuts:
 | Keyboard shortcut | Meaning |
+| -- | -- |
 | Ctrl+Alt+Shift+C | Format text as C# 12 syntax, use background color from the VS.NET Syntax Ribbon tab |
 | Ctrl+Alt+Shift+T | Format text as TypeScript syntax, use background color from the VS.NET Syntax Ribbon tab |
 | Ctrl+Alt+Shift+J | Format text as JavaScript syntax, use background color from the VS.NET Syntax Ribbon tab |
