@@ -8,9 +8,9 @@ Language dropdown:
 
 <table>
 <tr>
-<td width="200" align="center">
+<th width="550" align="center">
 <b>Language</b>
-</td>
+</th>
 </tr>
 <tr>
 <td>
@@ -41,27 +41,70 @@ Angular
 
 Themes:
 
-| Theme | Description |
-| -- | -- |
-| Light | Light theme from VS.NET 2026 |
-| Dark | Dark theme from VS.NET 2026 |
+<table>
+  <tr>
+    <th width="150">Theme</th>
+    <th width="400">Description</th>
+  </tr>
+  <tr>
+    <td>Light</td>
+    <td>Light theme from VS.NET 2026</td>
+  </tr>
+  <tr>
+    <td>Dark</td>
+    <td>Dark theme from VS.NET 2026</td>
+  </tr>
+</table>
 
 
-| Background | Description |
-| -- | -- |
-| Normal | No change in background color |
-| Red | Light-red background (used for incorrect code) |
-| Green | Light-green background (used for correct code |
+
+<table>
+  <tr>
+    <th width="150">Background</th>
+    <th width="400">Description</th>
+  </tr>
+  <tr>
+    <td>Normal</td>
+    <td>No change in background color</td>
+  </tr>
+  <tr>
+    <td>Red</td>
+    <td>Light-red background (used for incorrect code)</td>
+  </tr>
+  <tr>
+    <td>Green</td>
+    <td>Light-green background (used for correct code</td>
+  </tr>
+</table>
 
 Runtime formatting is performed by either selections from the VS.NET Syntax Ribbon tab, or by using keyboard shortcuts:
 
-| Keyboard shortcut | Meaning |
-| -- | -- |
-| Ctrl+Alt+Shift+C | Format text as C# 12 syntax, use background color from the VS.NET Syntax Ribbon tab |
-| Ctrl+Alt+Shift+T | Format text as TypeScript syntax, use background color from the VS.NET Syntax Ribbon tab |
-| Ctrl+Alt+Shift+J | Format text as JavaScript syntax, use background color from the VS.NET Syntax Ribbon tab |
-| Ctrl+Alt+Shift+H | Format text as HTML syntax, use background color from the VS.NET Syntax Ribbon tab |
-| Ctrl+Alt+Shift+A | Format text as Angular syntax, use background color from the VS.NET Syntax Ribbon tab |
+<table>
+  <tr>
+    <th width="100">Keyboard shortcut</th>
+    <th width="400">Meaning</th>
+  </tr>
+  <tr>
+    <td>Ctrl+Alt+Shift+C</td>
+    <td>Format text as C# 12 syntax, use background color from the VS.NET Syntax Ribbon tab</td>
+  </tr>
+  <tr>
+    <td>Ctrl+Alt+Shift+T</td>
+    <td>Format text as TypeScript syntax, use background color from the VS.NET Syntax Ribbon tab</td>
+  </tr>
+  <tr>
+    <td>Ctrl+Alt+Shift+J</td>
+    <td>Format text as JavaScript syntax, use background color from the VS.NET Syntax Ribbon tab</td>
+  </tr>
+  <tr>
+    <td>Ctrl+Alt+Shift+H</td>
+    <td>Format text as HTML syntax, use background color from the VS.NET Syntax Ribbon tab</td>
+  </tr>
+  <tr>
+    <td>Ctrl+Alt+Shift+A</td>
+    <td>Format text as Angular syntax, use background color from the VS.NET Syntax Ribbon tab</td>
+  </tr>
+</table>
 
 # VS.NET Syntax Word Add-in
 
