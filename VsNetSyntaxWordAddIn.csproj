@@ -22,9 +22,11 @@
     <BootstrapperEnabled>true</BootstrapperEnabled>
     <ApplicationVersion>1.0.0.0</ApplicationVersion>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <UseWinFormsOutOfProcDesigner>false</UseWinFormsOutOfProcDesigner>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">18.0</VisualStudioVersion>
     <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
     <VstoReferencePath>$(DevEnvDir)ReferenceAssemblies\v4.0</VstoReferencePath>
+    <VstoReferencePath Condition="!Exists('$(VstoReferencePath)\Microsoft.Office.Tools.Common.v4.0.Utilities.dll')">$([System.IO.Path]::GetFullPath('$(MSBuildToolsPath)\..\..\..\Common7\IDE\ReferenceAssemblies\v4.0'))</VstoReferencePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
     <OutputPath>bin\Debug\</OutputPath>
@@ -44,26 +46,26 @@
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
     <Reference Include="Microsoft.CSharp" />
-    <Reference Include="Microsoft.Office.Tools.v4.0.Framework">
+    <Reference Include="Microsoft.Office.Tools.v4.0.Framework, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>$(VstoReferencePath)\Microsoft.Office.Tools.v4.0.Framework.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="Microsoft.VisualStudio.Tools.Applications.Runtime">
+    <Reference Include="Microsoft.VisualStudio.Tools.Applications.Runtime, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <Private>false</Private>
     </Reference>
-    <Reference Include="Microsoft.Office.Tools">
+    <Reference Include="Microsoft.Office.Tools, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>$(VstoReferencePath)\Microsoft.Office.Tools.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="Microsoft.Office.Tools.Common">
+    <Reference Include="Microsoft.Office.Tools.Common, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>$(VstoReferencePath)\Microsoft.Office.Tools.Common.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="Microsoft.Office.Tools.Word">
+    <Reference Include="Microsoft.Office.Tools.Word, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>$(VstoReferencePath)\Microsoft.Office.Tools.Word.dll</HintPath>
       <Private>false</Private>
     </Reference>
-    <Reference Include="Microsoft.Office.Tools.Common.v4.0.Utilities">
+    <Reference Include="Microsoft.Office.Tools.Common.v4.0.Utilities, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>$(VstoReferencePath)\Microsoft.Office.Tools.Common.v4.0.Utilities.dll</HintPath>
       <Private>true</Private>
     </Reference>
