@@ -4,6 +4,9 @@ The add-in creates a VS.NET Syntax tab in the Word ribbon for formatting code sn
 
 The add-in looks like below:
 
+<img width="975" height="247" alt="image" src="https://github.com/user-attachments/assets/e422ad3e-1252-4a3a-9158-36cc5c3417a3" />
+
+
 Language dropdown:
 
 <table>
