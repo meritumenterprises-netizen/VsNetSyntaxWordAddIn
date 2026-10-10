@@ -6,6 +6,7 @@ The add-in looks like below:
 
 Language dropdown: 
 | Language |
+| -- |
 | C# 12 |
 | JavaScript |
 | TypeScript | 
