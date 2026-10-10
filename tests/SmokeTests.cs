@@ -195,6 +195,9 @@ internal static class SmokeTests
             foreach (int offset in new[] { 0, 1, source.IndexOf("my-widget", StringComparison.Ordinal),
                 source.IndexOf("</div>", StringComparison.Ordinal) + 2 })
                 Assert(BoldAt(spans, offset), "HTML: tag not bold");
+            foreach (int offset in new[] { 1, source.IndexOf("my-widget", StringComparison.Ordinal),
+                source.IndexOf("</div>", StringComparison.Ordinal) + 2 })
+                Assert(ColorAt(spans, offset) == Ole("#8B0000"), "HTML: tag name not dark red");
             foreach (string plain in new[] { "class", "sample", "text", "&amp;", "data-id" })
                 Assert(!BoldAt(spans, source.IndexOf(plain, StringComparison.Ordinal)), "HTML: non-tag incorrectly bold: " + plain);
             Assert(!BoldAt(spans, source.LastIndexOf("div", StringComparison.Ordinal)), "HTML: commented tag bold");
@@ -210,6 +213,15 @@ internal static class SmokeTests
             Assert(ColorAt(interpolationSpans, interpolation.IndexOf("false", StringComparison.Ordinal)) ==
                 ColorAt(interpolationSpans, interpolation.IndexOf("<!--", StringComparison.Ordinal)), "Angular: interpolation changed comment colors");
             Assert(interpolationSpans.Sum(s => s.Length) == interpolation.Length, "Angular: interpolation offsets changed");
+            Assert(BoldAt(interpolationSpans, interpolation.IndexOf("true", StringComparison.Ordinal)),
+                "Angular: interpolation keyword not bold");
+            foreach (string plain in new[] { "yes", "42", "false" })
+                Assert(!BoldAt(interpolationSpans, interpolation.IndexOf(plain, StringComparison.Ordinal)),
+                    "Angular: value or comment incorrectly bold: " + plain);
+            var attributeSpans = highlighter.Highlight(source, "Angular");
+            foreach (string attributeName in new[] { "class", "data-id" })
+                Assert(BoldAt(attributeSpans, source.IndexOf(attributeName, StringComparison.Ordinal)),
+                    "Angular: standard attribute not bold: " + attributeName);
             foreach (string angular in new[] {
                 "<button (click)=\"save()\">Save</button>",
                 "<button [disabled]=\"busy\" (click)=\"save()\">Save</button>",
@@ -229,10 +241,39 @@ internal static class SmokeTests
                         BoldAt(angularSpans, close + 2), "HTML: Angular opening/closing tag styles differ");
                 Assert(angularSpans.Sum(s => s.Length) == angular.Length, "HTML: Angular offsets changed");
                 int attribute = angular.IndexOfAny(new[] { '(', '[', '*', '#' });
-                Assert(!BoldAt(angularSpans, attribute), "HTML: Angular attribute incorrectly bold");
+                Assert(BoldAt(angularSpans, attribute), "Angular: attribute not bold");
+                Assert(ColorAt(angularSpans, attribute) == Ole(theme == SyntaxTheme.Dark ? "#569CD6" : "#0000FF"),
+                    "Angular: attribute not blue");
+                int value = angular.IndexOf('"') + 1;
+                Assert(!BoldAt(angularSpans, value), "Angular: attribute value incorrectly bold");
             }
+            Assert(highlighter.Highlight("const value = true;", "JavaScript").All(s => !s.Bold),
+                "Angular: keyword bold leaked across language changes");
+            const string standalone = "{{ customer.name }}\u00a0\u00a0\r\n" +
+                "[disabled]=\"isLoading\"\u00a0\r\n" +
+                "(click)=\"save()\"\u00a0\r\n" +
+                "[(ngModel)]=\"customer.name\"\u00a0\r\n" +
+                "<!--\r\n[hidden]=\"false\"\r\n-->";
+            var standaloneSpans = highlighter.Highlight(standalone, "Angular");
+            foreach (string binding in new[] { "disabled", "click", "ngModel" })
+            {
+                int start = standalone.IndexOf(binding, StringComparison.Ordinal);
+                for (int i = start; i < start + binding.Length; i++)
+                {
+                    Assert(BoldAt(standaloneSpans, i), "Angular: standalone binding not bold: " + binding);
+                    Assert(ColorAt(standaloneSpans, i) == Ole(theme == SyntaxTheme.Dark ? "#569CD6" : "#0000FF"),
+                        "Angular: standalone binding not blue: " + binding);
+                }
+            }
+            foreach (string plain in new[] { "customer.name", "isLoading", "save", "hidden", "false" })
+                Assert(!BoldAt(standaloneSpans, standalone.IndexOf(plain, StringComparison.Ordinal)),
+                    "Angular: standalone expression or comment incorrectly bold: " + plain);
+            Assert(standaloneSpans.Sum(s => s.Length) == standalone.Length,
+                "Angular: standalone binding offsets changed");
+            Assert(highlighter.Highlight(standalone, "Html").All(s => !s.Bold),
+                "Angular: standalone binding bold leaked into HTML");
         }
-        Console.WriteLine("HTML: opening/closing/custom tags bold; attributes, values, text and comments normal OK");
+        Console.WriteLine("HTML tags bold; Angular attributes and interpolation keywords bold; values and comments normal OK");
     }
 
     private static void CheckShortcuts()
@@ -392,7 +433,8 @@ internal static class SmokeTests
                     }
                     if (language == "Html" || language == "Angular")
                     {
-                        Assert(document.Range(8, 15).Font.Bold == 0, "Word: HTML attribute incorrectly bold");
+                        Assert(document.Range(8, 15).Font.Bold == (language == "Angular" ? -1 : 0),
+                            "Word: attribute bold does not match language");
                         int close = boldCode.IndexOf("</", StringComparison.Ordinal);
                         Assert(document.Range(close, close + 9).Font.Bold == -1, "Word: HTML closing tag not bold");
                         Assert(document.Range(1, 7).Font.Color == document.Range(close + 2, close + 8).Font.Color,
