@@ -11,7 +11,7 @@ namespace VsNetSyntaxWordAddIn
         private int selectedLanguageIndex;
         private SyntaxTheme selectedTheme;
         private int selectedBackgroundIndex;
-        private static readonly int?[] BackgroundColors = { null, 0xB4D9FE, 0xD9EFE2 };
+        private static readonly int?[] BackgroundColors = { null, 0xB4D9FE, 0xE7F5ED };
         private Bitmap[] backgroundSwatches;
         private static readonly string[] LanguageIds = { "CSharp", "Html", "TypeScript", "JavaScript" };
 
@@ -46,6 +46,7 @@ namespace VsNetSyntaxWordAddIn
             SyntaxLanguage.SelectedItemIndex = selectedLanguageIndex;
             SyntaxThemeDropDown.SelectedItemIndex = (int)selectedTheme;
             SyntaxBackgroundDropDown.SelectedItemIndex = selectedBackgroundIndex;
+            SyntaxBackgroundDropDown.Image = backgroundSwatches[selectedBackgroundIndex];
         }
 
         private void OnBackgroundSelected(object sender, RibbonControlEventArgs e)
@@ -53,6 +54,8 @@ namespace VsNetSyntaxWordAddIn
             int index = SyntaxBackgroundDropDown.SelectedItemIndex;
             if (index < 0 || index >= BackgroundColors.Length) return;
             selectedBackgroundIndex = index;
+            if (backgroundSwatches != null)
+                SyntaxBackgroundDropDown.Image = backgroundSwatches[index];
             Apply();
         }
 

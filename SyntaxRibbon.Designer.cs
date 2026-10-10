@@ -100,7 +100,7 @@ namespace VsNetSyntaxWordAddIn
             this.SyntaxBackgroundDropDown.Items.Add(ribbonDropDownItemImpl9);
             this.SyntaxBackgroundDropDown.Label = "Background";
             this.SyntaxBackgroundDropDown.Name = "SyntaxBackgroundDropDown";
-            this.SyntaxBackgroundDropDown.ShowItemImage = true;
+            this.SyntaxBackgroundDropDown.ShowImage = true;
             this.SyntaxBackgroundDropDown.SizeString = "TypeScript  ";
             this.SyntaxBackgroundDropDown.SelectionChanged += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.OnBackgroundSelected);
             // 

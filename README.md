@@ -12,9 +12,9 @@ Install Visual Studio with the Office/SharePoint development workload and deskto
 4. Select plain code text. In the **VS.NET Syntax** tab, choose **C#**, **HTML**, **TypeScript**, or **JavaScript** from **Syntax Highlight**. Changing the language applies formatting immediately.
 5. Use **Apply** to format another selection with the current language.
 
-The **Theme** dropdown offers **Light** (the default) and **Dark** for language text colors. The **Background** dropdown offers **Normal** (the default, leaves existing background formatting untouched), **Red** (`#FED9B4`), and **Green** (`#E2EFD9`), with rectangular color swatches. Office places dropdown item images to the left of their labels; right-side images are not supported by this native control. Changing either dropdown immediately reformats the selection. Apply and keyboard shortcuts use both current settings. Background colors apply only to selected code, leaving the document page color unchanged.
+The **Theme** dropdown offers **Light** (the default) and **Dark** for language text colors. The **Background** dropdown offers **Normal** (the default, leaves existing background formatting untouched), **Red** (`#FED9B4`), and **Green** (`#EDF5E7`), with rectangular color swatches in the menu and on the closed control for the selected value. Office places dropdown images to the left; right-side images are not supported by this native control. Changing either dropdown immediately reformats the selection. Apply and keyboard shortcuts use both current settings. Background colors apply only to selected code, leaving the document page color unchanged.
 
-Formatting modifies character properties in place, preserving text, tabs, line breaks, and the selection. Changes are grouped into one Undo action. The formatter uses Consolas 10 pt and rejects protected documents and selections containing cell markers, fields, inline objects, or content controls.
+Formatting modifies character properties in place, preserving text, tabs, line breaks, and the selection. Changes are grouped into one Undo action. C# and TypeScript class, method, and property names are bold; comments, strings, and keywords retain normal weight. C# resolves references available in the selected snippet with Roslyn; TypeScript uses the Serenity.TypeScript parser for declarations and syntactically recognizable member references. Neither has the full source project's symbol context. HTML and JavaScript are unchanged. Reapplying formatting resets obsolete bold styling. The formatter uses Consolas 10 pt and rejects protected documents and selections containing cell markers, fields, inline objects, or content controls.
 
 To build without registering or launching Word, run `pwsh -NoProfile -File tools/Build.ps1`. To build and register only, add `-Register`. The build script locates Visual Studio by its installed MSBuild and OfficeTools targets, avoiding installer component identifiers that differ between installations.
 
@@ -35,7 +35,9 @@ The add-in applies highlighting to the current selection with these shortcuts wh
 
 Both left and right modifier keys work. Holding a shortcut applies it once per key press. The ribbon language changes to match the shortcut. The loaded Word add-in owns these native Windows hotkeys: it registers them while a Word document window is active and releases them when focus leaves Word, the add-in unloads, or Word closes. The old Windows-key shortcuts are no longer registered.
 
-ColorCode.Core 2.0.15 supplies all four language grammars and its DefaultLight and DefaultDark palettes. This is Visual Studio-style lexical highlighting, not an exact reproduction of Visual Studio 2026 semantic classification or its current default theme. Word selections have no source-project context, and ColorCode does not use the Visual Studio language services. Exact VS 2026 parity remains outstanding.
+C# uses Microsoft's Roslyn parser (`Microsoft.CodeAnalysis.CSharp` 4.8.0), configured for **C# 12**. It recognizes modern syntax including records, required/init members, primary constructors, collection expressions, raw and UTF-8 strings, and interpolated expressions. Contextual keywords are colored according to their parsed roles, not a word list. Incomplete snippets are handled by Roslyn's syntax recovery. This is syntax highlighting, not compilation or full project-aware semantic classification; symbols and external types are not resolved.
+
+ColorCode.Core 2.0.15 still supplies the HTML, TypeScript, and JavaScript grammars and the DefaultLight/DefaultDark palettes for all languages. Exact Visual Studio 2026 theme and semantic-color parity is not claimed.
 
 ## Validation
 
@@ -46,6 +48,8 @@ msbuild tests/SmokeTests.csproj
 tests/bin/SmokeTests.exe
 tests/bin/SmokeTests.exe --word
 ```
+
+When a running Word instance already owns the shortcuts, use `tests/bin/SmokeTests.exe --word --skip-shortcuts` to run syntax and formatting checks without competing for its hotkeys. C# 12 fixtures cover records, contextual keywords versus identifiers, primary constructors, collection expressions, alias-any-type syntax, inline-array attributes, ref-readonly parameters, default lambda parameters, raw/UTF-8/interpolated strings, Word line breaks, and incomplete snippets.
 
 The syntax smoke tests and optional Word integration test passed locally. The integration test creates a new temporary Word instance and verifies text preservation, colors, selection boundaries, and grouped Undo. Word also loaded the registered development add-in successfully (`COMAddIns.Item("VsNetSyntaxWordAddIn").Connect` was true). These checks do not verify Visual Studio's F5 debugger launch.
 

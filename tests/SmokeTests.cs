@@ -3,6 +3,7 @@ using System.Drawing;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
+using Microsoft.CodeAnalysis.CSharp;
 using VsNetSyntaxWordAddIn;
 using VsNetSyntaxWordAddIn.Highlighting;
 using Word = Microsoft.Office.Interop.Word;
@@ -21,7 +22,10 @@ internal static class SmokeTests
             Check("CSharp", "");
             Check("JavaScript", "// \uD83D\uDE00\rconst s = 'Za\u017C\u00F3\u0142\u0107';\r\n");
             CheckThemeColors();
-            CheckShortcuts();
+            CheckCSharp12();
+            CheckBoldNames();
+            if (!args.Contains("--skip-shortcuts")) CheckShortcuts();
+            else Console.WriteLine("Shortcut registration checks skipped (hotkeys may be owned by a running Word instance).");
             if (args.Contains("--word")) CheckWord();
             if (args.Contains("--shortcut-input")) CheckShortcutInput();
             Console.WriteLine("All smoke tests passed.");
@@ -72,6 +76,112 @@ internal static class SmokeTests
     }
 
     private static int Ole(string color) => ColorTranslator.ToOle(ColorTranslator.FromHtml(color));
+
+    private static void CheckCSharp12()
+    {
+        const string source = "using Point = (int X, int Y);\n" +
+            "[System.Runtime.CompilerServices.InlineArray(4)] struct Buffer { private int item; }\n" +
+            "public record Person(string Name);\n" +
+            "public class Example(int size) {\n" +
+            "public required string Name { get; init; }\n" +
+            "int[] items = [1, 2, .. new int[] { 3 }];\n" +
+            "void Read(ref readonly int value) { }\n" +
+            "void Run() { var add = (int x = 1) => x + size; }\n" +
+            "}\n";
+        var options = new CSharpParseOptions(LanguageVersion.CSharp12);
+        Assert(!CSharpSyntaxTree.ParseText(source, options).GetDiagnostics().Any(d =>
+            d.Severity == Microsoft.CodeAnalysis.DiagnosticSeverity.Error), "C# 12: feature fixture failed to parse");
+        foreach (SyntaxTheme theme in Enum.GetValues(typeof(SyntaxTheme)))
+        {
+            var highlighter = new SyntaxHighlighter(theme);
+            int keyword = Ole(theme == SyntaxTheme.Dark ? "#569CD6" : "#0000FF");
+            int literal = Ole(theme == SyntaxTheme.Dark ? "#D69D85" : "#A31515");
+            var spans = highlighter.Highlight(source, "CSharp");
+            Assert(spans.Sum(s => s.Length) == source.Length, "C# 12: feature offsets changed");
+            foreach (string word in new[] { "record", "required", "init", "ref", "readonly", "using", "struct", "class", "var" })
+                Assert(ColorAt(spans, source.IndexOf(word, StringComparison.Ordinal)) == keyword,
+                    "C# 12: missing keyword " + word + " in " + theme);
+
+            const string strings = "string a = \"\"\"record required\"\"\";\n" +
+                "var b = \"\"\"\nrecord\n\"\"\"u8;\n" +
+                "string c = $$\"\"\"record {{new object()}}\"\"\";";
+            var stringSpans = highlighter.Highlight(strings, "CSharp");
+            int search = 0;
+            while ((search = strings.IndexOf("record", search, StringComparison.Ordinal)) >= 0)
+            {
+                Assert(ColorAt(stringSpans, search) == literal, "C# 12: raw string colored as keyword");
+                search += 6;
+            }
+            Assert(ColorAt(stringSpans, strings.IndexOf("new", StringComparison.Ordinal)) == keyword,
+                "C# 12: interpolation expression colored as string");
+
+            const string identifiers = "class C { int record, required, @class; void M() { record = required; } }";
+            var identifierSpans = highlighter.Highlight(identifiers, "CSharp");
+            foreach (string name in new[] { "record", "required", "@class" })
+                Assert(ColorAt(identifierSpans, identifiers.IndexOf(name, StringComparison.Ordinal)) == highlighter.ForegroundColor,
+                    "C# 12: identifier incorrectly colored as keyword: " + name);
+
+            const string comments = "// record\r/// required\v/* init */\rpublic record P;";
+            var commentSpans = highlighter.Highlight(comments, "CSharp");
+            Assert(ColorAt(commentSpans, comments.IndexOf("record", StringComparison.Ordinal)) != keyword,
+                "C# 12: comment colored as keyword");
+            Assert(ColorAt(commentSpans, comments.LastIndexOf("record", StringComparison.Ordinal)) == keyword,
+                "C# 12: Word line breaks swallowed a declaration");
+            Assert(commentSpans.Sum(s => s.Length) == comments.Length, "C# 12: Word offsets changed");
+            var incomplete = highlighter.Highlight("public record Person(string Name", "CSharp");
+            Assert(incomplete.Sum(s => s.Length) == 32, "C# 12: incomplete snippet lost offsets");
+        }
+        Console.WriteLine("C# 12: records, contextual keywords, feature syntax, raw strings, interpolation, identifiers and offsets OK");
+    }
+
+    private static int ColorAt(System.Collections.Generic.IReadOnlyList<HighlightSpan> spans, int offset) =>
+        spans.Single(s => s.Start <= offset && s.Start + s.Length > offset).Color;
+
+    private static void CheckBoldNames()
+    {
+        const string csharp = "class Person { public string Name { get; set; } public int field; " +
+            "public void Greet() { Name = \"Person Greet Name\"; field = 1; } }\r" +
+            "class Use { void Run() { Person p = new Person(); p.Greet(); p.Name = \"x\"; } }\v// Person Greet Name";
+        const string typescript = "class Person { Name: string = 'Person Greet Name'; field: number = 1; " +
+            "Greet<T>(value: T): void { this.Name = 'x'; } get Display(): string { return this.Name; } }\r" +
+            "const p = new Person(); p.Greet<number>(1); p.Name = 'x';\v// Person Greet Name";
+        foreach (var theme in new[] { SyntaxTheme.Light, SyntaxTheme.Dark })
+        {
+            foreach (var fixture in new[] {
+                new { Language = "CSharp", Source = csharp },
+                new { Language = "TypeScript", Source = typescript }
+            })
+            {
+                var spans = new SyntaxHighlighter(theme).Highlight(fixture.Source, fixture.Language);
+                Assert(spans.Sum(s => s.Length) == fixture.Source.Length, "Bold: lost source offsets");
+                foreach (var name in new[] { "Person", "Name", "Greet" })
+                {
+                    int first = fixture.Source.IndexOf(name, StringComparison.Ordinal);
+                    if (fixture.Language == "TypeScript" && name == "Greet")
+                        first = fixture.Source.IndexOf("Greet<T>", StringComparison.Ordinal);
+                    int usage = fixture.Source.IndexOf("p." + name, StringComparison.Ordinal);
+                    Assert(BoldAt(spans, first), "Bold: declaration not bold: " + fixture.Language + " " + name);
+                    if (usage >= 0) Assert(BoldAt(spans, usage + 2), "Bold: member reference not bold: " + name);
+                }
+                int comment = fixture.Source.LastIndexOf("Person", StringComparison.Ordinal);
+                int literal = fixture.Source.IndexOf("Person Greet Name", StringComparison.Ordinal);
+                Assert(!BoldAt(spans, comment) && !BoldAt(spans, literal), "Bold: comment or string changed");
+                Assert(!BoldAt(spans, 0), "Bold: class keyword changed");
+                if (fixture.Language == "CSharp")
+                    Assert(!BoldAt(spans, fixture.Source.IndexOf("field", StringComparison.Ordinal)), "Bold: C# field changed");
+                else
+                    Assert(BoldAt(spans, fixture.Source.IndexOf("Display", StringComparison.Ordinal)), "Bold: TypeScript accessor missing");
+            }
+            const string signature = "interface Api { value?: string; run<T>(arg: T): void; }";
+            var signatures = new SyntaxHighlighter(theme).Highlight(signature, "TypeScript");
+            Assert(BoldAt(signatures, signature.IndexOf("value", StringComparison.Ordinal)) &&
+                BoldAt(signatures, signature.IndexOf("run", StringComparison.Ordinal)), "Bold: TypeScript interface members missing");
+        }
+        Console.WriteLine("Bold: C#/TypeScript declarations, references, accessors, signatures and non-name exclusions OK");
+    }
+
+    private static bool BoldAt(System.Collections.Generic.IReadOnlyList<HighlightSpan> spans, int offset) =>
+        spans.Single(s => s.Start <= offset && s.Start + s.Length > offset).Bold;
 
     private static void CheckShortcuts()
     {
@@ -160,7 +270,7 @@ internal static class SmokeTests
                 "Word: undo did not restore original formatting");
             foreach (var theme in new[] { SyntaxTheme.Light, SyntaxTheme.Dark })
             {
-                foreach (var color in new[] { "#FED9B4", "#E2EFD9" })
+                foreach (var color in new[] { "#FED9B4", "#EDF5E7" })
                 {
                     range.Select();
                     WordSelectionFormatter.Format(application, "CSharp", theme, Ole(color));
@@ -178,6 +288,48 @@ internal static class SmokeTests
             Console.WriteLine("Word: Normal preserves shading/highlight; Red and Green work in both themes OK");
             Console.WriteLine("Word: light/dark switching, background, plain text, and themed undo OK");
             Console.WriteLine("Word: text, selection, colors, boundaries, and grouped undo OK");
+            const string modernCode = "public record Person(string Name);\rpublic class C(int size) { public required string Name { get; init; } int[] values = [1, 2]; }\r";
+            document.Content.Text = modernCode;
+            var modernRange = document.Range(0, modernCode.Length);
+            foreach (var theme in new[] { SyntaxTheme.Light, SyntaxTheme.Dark })
+            {
+                modernRange.Select();
+                WordSelectionFormatter.Format(application, "CSharp", theme);
+                foreach (var word in new[] { "record", "required", "init" })
+                {
+                    int offset = modernCode.IndexOf(word, StringComparison.Ordinal);
+                    Assert(document.Range(offset, offset + word.Length).Font.Color ==
+                        (Word.WdColor)Ole(theme == SyntaxTheme.Dark ? "#569CD6" : "#0000FF"), "Word: modern keyword not highlighted: " + word);
+                }
+                Assert(modernRange.Text == modernCode, "Word: C# 12 formatting changed text");
+            }
+            Console.WriteLine("Word: C# 12 keywords and unchanged text verified in both themes OK");
+            foreach (var language in new[] { "CSharp", "TypeScript" })
+            {
+                string boldCode = language == "CSharp"
+                    ? "class Person { public string Name { get; set; } void Greet() { } }\r"
+                    : "class Person { Name: string; Greet(): void { } }\r";
+                document.Content.Text = boldCode;
+                var boldRange = document.Range(0, boldCode.Length);
+                foreach (var theme in new[] { SyntaxTheme.Light, SyntaxTheme.Dark })
+                {
+                    boldRange.Select();
+                    WordSelectionFormatter.Format(application, language, theme);
+                    foreach (var name in new[] { "Person", "Name", "Greet" })
+                    {
+                        int offset = boldCode.IndexOf(name, StringComparison.Ordinal);
+                        Assert(document.Range(offset, offset + name.Length).Font.Bold == -1, "Word: name not bold: " + language + " " + name);
+                    }
+                    Assert(document.Range(0, 5).Font.Bold == 0, "Word: keyword incorrectly bold");
+                    Assert(boldRange.Text == boldCode, "Word: bold changed text");
+                    Assert(document.Undo(), "Word: bold undo failed");
+                }
+                boldRange.Select();
+                WordSelectionFormatter.Format(application, language);
+                WordSelectionFormatter.Format(application, "JavaScript");
+                Assert(boldRange.Font.Bold == 0, "Word: bold leaked when changing languages");
+            }
+            Console.WriteLine("Word: C#/TypeScript bold names, reset and grouped undo verified in both themes OK");
         }
         finally
         {

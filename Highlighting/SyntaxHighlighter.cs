@@ -19,18 +19,21 @@ namespace VsNetSyntaxWordAddIn.Highlighting
         public int Start { get; }
         public int Length { get; }
         public int Color { get; }
+        public bool Bold { get; }
 
-        public HighlightSpan(int start, int length, int color)
+        public HighlightSpan(int start, int length, int color, bool bold = false)
         {
             Start = start;
             Length = length;
             Color = color;
+            Bold = bold;
         }
     }
 
     public sealed class SyntaxHighlighter : CodeColorizerBase
     {
         private int[] colors;
+        private bool[] bold;
         private int position;
 
         public SyntaxHighlighter(SyntaxTheme theme = SyntaxTheme.Light) : base(GetStyles(theme), null) { }
@@ -54,7 +57,7 @@ namespace VsNetSyntaxWordAddIn.Highlighting
             ILanguage language;
             switch (languageId)
             {
-                case "CSharp": language = Languages.CSharp; break;
+                case "CSharp": language = null; break;
                 case "Html": language = Languages.Html; break;
                 case "TypeScript": language = Languages.Typescript; break;
                 case "JavaScript": language = Languages.JavaScript; break;
@@ -62,20 +65,27 @@ namespace VsNetSyntaxWordAddIn.Highlighting
             }
 
             colors = new int[text.Length];
+            bold = new bool[text.Length];
             int foreground = ForegroundColor;
             for (int i = 0; i < colors.Length; i++) colors[i] = foreground;
             position = 0;
             // Word paragraph and manual line breaks must retain their original offsets.
             var source = text.Replace('\r', '\n').Replace('\v', '\n');
-            languageParser.Parse(source, language, Write);
-            if (position != text.Length) throw new InvalidOperationException("The highlighter did not preserve source offsets.");
+            if (languageId == "CSharp")
+                CSharpSyntaxHighlighter.Highlight(source, ApplyColor, ApplyBold);
+            else
+            {
+                languageParser.Parse(source, language, Write);
+                if (position != text.Length) throw new InvalidOperationException("The highlighter did not preserve source offsets.");
+                if (languageId == "TypeScript") TypeScriptNameHighlighter.Highlight(source, ApplyBold);
+            }
 
             var spans = new List<HighlightSpan>();
             for (int start = 0; start < colors.Length;)
             {
                 int end = start + 1;
-                while (end < colors.Length && colors[end] == colors[start]) end++;
-                spans.Add(new HighlightSpan(start, end - start, colors[start]));
+                while (end < colors.Length && colors[end] == colors[start] && bold[end] == bold[start]) end++;
+                spans.Add(new HighlightSpan(start, end - start, colors[start], bold[start]));
                 start = end;
             }
             return spans;
@@ -101,6 +111,24 @@ namespace VsNetSyntaxWordAddIn.Highlighting
                 }
             }
             foreach (var child in scope.Children) ApplyScope(child, chunkLength);
+        }
+
+        private void ApplyColor(int start, int length, string scopeName)
+        {
+            if (start < 0 || length < 0 || start + length > colors.Length)
+                throw new InvalidOperationException("The C# parser produced an invalid token range.");
+            if (!Styles.Contains(scopeName)) return;
+            string foreground = Styles[scopeName].Foreground;
+            if (string.IsNullOrEmpty(foreground)) return;
+            int color = ToWordColor(foreground);
+            for (int i = start; i < start + length; i++) colors[i] = color;
+        }
+
+        private void ApplyBold(int start, int length)
+        {
+            if (start < 0 || length < 0 || start + length > bold.Length)
+                throw new InvalidOperationException("The parser produced an invalid name range.");
+            for (int i = start; i < start + length; i++) bold[i] = true;
         }
 
         private static int ToWordColor(string value)

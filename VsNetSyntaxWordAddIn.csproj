@@ -79,6 +79,8 @@
       <Private>false</Private>
     </Reference>
     <PackageReference Include="ColorCode.Core" Version="2.0.15" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" />
+    <PackageReference Include="Serenity.TypeScript" Version="1.0.0" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\Resources.Designer.cs">
@@ -102,6 +104,8 @@
     <Compile Include="GlobalSyntaxShortcuts.cs" />
     <None Include="SyntaxRibbon.xml" />
     <Compile Include="Highlighting\SyntaxHighlighter.cs" />
+    <Compile Include="Highlighting\CSharpSyntaxHighlighter.cs" />
+    <Compile Include="Highlighting\TypeScriptNameHighlighter.cs" />
     <Compile Include="WordSelectionFormatter.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <None Include="README.md" />

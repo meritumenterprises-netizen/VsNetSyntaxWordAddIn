@@ -66,7 +66,11 @@ namespace VsNetSyntaxWordAddIn
                 {
                     tokenRange.SetRange(start + span.Start, start + span.Start + span.Length);
                     var tokenFont = tokenRange.Font;
-                    try { tokenFont.Color = (Word.WdColor)span.Color; }
+                    try
+                    {
+                        tokenFont.Color = (Word.WdColor)span.Color;
+                        if (span.Bold) tokenFont.Bold = -1;
+                    }
                     finally { Marshal.ReleaseComObject(tokenFont); }
                 }
             }
