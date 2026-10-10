@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<customUI xmlns="http://schemas.microsoft.com/office/2009/07/customui">
+  <ribbon>
+    <tabs>
+      <tab id="VsNetSyntaxTab" label="VS.NET Syntax">
+        <group id="SyntaxGroup" label="Code">
+          <dropDown id="SyntaxLanguage" label="Syntax Highlight" sizeString="TypeScript  " getSelectedItemIndex="GetSelectedLanguageIndex" onAction="OnLanguageSelected">
+            <item id="CSharp" label="C#" />
+            <item id="Html" label="HTML" />
+            <item id="TypeScript" label="TypeScript" />
+            <item id="JavaScript" label="JavaScript" />
+          </dropDown>
+          <button id="ApplySyntax" label="Apply" imageMso="FontColor" onAction="OnApply" screentip="Apply syntax highlighting" />
+        </group>
+      </tab>
+    </tabs>
+  </ribbon>
+</customUI>

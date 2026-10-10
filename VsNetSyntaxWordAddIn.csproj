@@ -1,0 +1,112 @@
+<Project ToolsVersion="Current" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" />
+  <Import Project="DevelopmentSigning.props" Condition="Exists('DevelopmentSigning.props')" />
+  <PropertyGroup>
+    <ProjectTypeGuids>{BAA0C2D2-18E2-41B9-852F-F413020CAA33};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <ProjectGuid>{9C98A76C-7F28-490B-A57B-056725B1802B}</ProjectGuid>
+    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
+    <Platform Condition="'$(Platform)' == ''">AnyCPU</Platform>
+    <OutputType>Library</OutputType>
+    <RootNamespace>VsNetSyntaxWordAddIn</RootNamespace>
+    <AssemblyName>VsNetSyntaxWordAddIn</AssemblyName>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <LangVersion>latest</LangVersion>
+    <OfficeApplication>Word</OfficeApplication>
+    <LoadBehavior>3</LoadBehavior>
+    <FriendlyName>VS.NET Syntax</FriendlyName>
+    <OfficeApplicationDescription>Syntax highlighting for selected code in Word.</OfficeApplicationDescription>
+    <DefineConstants>VSTO40;TRACE</DefineConstants>
+    <GenerateManifests>true</GenerateManifests>
+    <SignManifests>true</SignManifests>
+    <ManifestKeyFile>DevelopmentSigning.pfx</ManifestKeyFile>
+    <BootstrapperEnabled>true</BootstrapperEnabled>
+    <ApplicationVersion>1.0.0.0</ApplicationVersion>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">18.0</VisualStudioVersion>
+    <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
+    <VstoReferencePath>$(DevEnvDir)ReferenceAssemblies\v4.0</VstoReferencePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+    <OutputPath>bin\Debug\</OutputPath>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <DefineConstants>$(DefineConstants);DEBUG</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <OutputPath>bin\Release\</OutputPath>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="Microsoft.Office.Tools.v4.0.Framework">
+      <HintPath>$(VstoReferencePath)\Microsoft.Office.Tools.v4.0.Framework.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Microsoft.VisualStudio.Tools.Applications.Runtime">
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Microsoft.Office.Tools">
+      <HintPath>$(VstoReferencePath)\Microsoft.Office.Tools.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Microsoft.Office.Tools.Common">
+      <HintPath>$(VstoReferencePath)\Microsoft.Office.Tools.Common.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Microsoft.Office.Tools.Word">
+      <HintPath>$(VstoReferencePath)\Microsoft.Office.Tools.Word.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Microsoft.Office.Tools.Common.v4.0.Utilities">
+      <HintPath>$(VstoReferencePath)\Microsoft.Office.Tools.Common.v4.0.Utilities.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="Office, Version=15.0.0.0, Culture=neutral, PublicKeyToken=71e9bce111e9429c">
+      <EmbedInteropTypes>true</EmbedInteropTypes>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Microsoft.Office.Interop.Word, Version=15.0.0.0, Culture=neutral, PublicKeyToken=71e9bce111e9429c">
+      <EmbedInteropTypes>true</EmbedInteropTypes>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="stdole">
+      <Private>false</Private>
+    </Reference>
+    <PackageReference Include="ColorCode.Core" Version="2.0.15" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="ThisAddIn.cs" />
+    <Compile Include="ThisAddIn.Designer.cs">
+      <DependentUpon>ThisAddIn.Designer.xml</DependentUpon>
+    </Compile>
+    <None Include="ThisAddIn.Designer.xml">
+      <DependentUpon>ThisAddIn.cs</DependentUpon>
+    </None>
+    <Compile Include="SyntaxRibbon.cs" />
+    <EmbeddedResource Include="SyntaxRibbon.xml" />
+    <Compile Include="Highlighting\SyntaxHighlighter.cs" />
+    <Compile Include="WordSelectionFormatter.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <None Include="README.md" />
+    <None Include="DevelopmentSigning.pfx" Condition="Exists('DevelopmentSigning.pfx')" />
+    <None Include="tools\Initialize-DevSigning.ps1" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Import Project="$(VSToolsPath)\OfficeTools\Microsoft.VisualStudio.Tools.Office.targets" />
+  <ProjectExtensions>
+    <VisualStudio>
+      <FlavorProperties GUID="{BAA0C2D2-18E2-41B9-852F-F413020CAA33}">
+        <ProjectProperties HostName="Word" HostPackage="{29A7B9D7-A7F1-4328-8EF0-6B2D1A56B2C1}" OfficeVersion="15.0" VstxVersion="4.0" ApplicationType="Word" Language="cs" TemplatesPath="" DebugInfoExeName="#Software\Microsoft\Office\16.0\Word\InstallRoot\Path#WINWORD.EXE" DebugInfoCommandLine="/x" AddItemTemplatesGuid="{51063C3A-E220-4D12-8922-BDA915ACD783}" />
+        <Host Name="Word" GeneratedCodeNamespace="VsNetSyntaxWordAddIn" IconIndex="0">
+          <HostItem Name="ThisAddIn" Code="ThisAddIn.cs" CanonicalName="AddIn" CanActivate="false" IconIndex="1" Blueprint="ThisAddIn.Designer.xml" GeneratedCode="ThisAddIn.Designer.cs" />
+        </Host>
+      </FlavorProperties>
+    </VisualStudio>
+  </ProjectExtensions>
+</Project>

@@ -1,0 +1,91 @@
+using System;
+using System.Collections.Generic;
+using System.Drawing;
+using ColorCode;
+using ColorCode.Parsing;
+using ColorCode.Styling;
+
+namespace VsNetSyntaxWordAddIn.Highlighting
+{
+    public sealed class HighlightSpan
+    {
+        public int Start { get; }
+        public int Length { get; }
+        public int Color { get; }
+
+        public HighlightSpan(int start, int length, int color)
+        {
+            Start = start;
+            Length = length;
+            Color = color;
+        }
+    }
+
+    public sealed class SyntaxHighlighter : CodeColorizerBase
+    {
+        private int[] colors;
+        private int position;
+
+        public SyntaxHighlighter() : base(StyleDictionary.DefaultLight, null) { }
+
+        public IReadOnlyList<HighlightSpan> Highlight(string text, string languageId)
+        {
+            if (text == null) throw new ArgumentNullException(nameof(text));
+            ILanguage language;
+            switch (languageId)
+            {
+                case "CSharp": language = Languages.CSharp; break;
+                case "Html": language = Languages.Html; break;
+                case "TypeScript": language = Languages.Typescript; break;
+                case "JavaScript": language = Languages.JavaScript; break;
+                default: throw new ArgumentException("Unsupported language.", nameof(languageId));
+            }
+
+            colors = new int[text.Length];
+            position = 0;
+            // Word paragraph and manual line breaks must retain their original offsets.
+            var source = text.Replace('\r', '\n').Replace('\v', '\n');
+            languageParser.Parse(source, language, Write);
+            if (position != text.Length) throw new InvalidOperationException("The highlighter did not preserve source offsets.");
+
+            var spans = new List<HighlightSpan>();
+            for (int start = 0; start < colors.Length;)
+            {
+                int end = start + 1;
+                while (end < colors.Length && colors[end] == colors[start]) end++;
+                spans.Add(new HighlightSpan(start, end - start, colors[start]));
+                start = end;
+            }
+            return spans;
+        }
+
+        protected override void Write(string parsedSourceCode, IList<Scope> scopes)
+        {
+            foreach (var scope in scopes) ApplyScope(scope, parsedSourceCode.Length);
+            position += parsedSourceCode.Length;
+        }
+
+        private void ApplyScope(Scope scope, int chunkLength)
+        {
+            if (scope.Index < 0 || scope.Length < 0 || scope.Index + scope.Length > chunkLength)
+                throw new InvalidOperationException("The parser produced an invalid token range.");
+            if (Styles.Contains(scope.Name))
+            {
+                string foreground = Styles[scope.Name].Foreground;
+                if (!string.IsNullOrEmpty(foreground))
+                {
+                    int color = ToWordColor(foreground);
+                    for (int i = scope.Index; i < scope.Index + scope.Length; i++) colors[position + i] = color;
+                }
+            }
+            foreach (var child in scope.Children) ApplyScope(child, chunkLength);
+        }
+
+        private static int ToWordColor(string value)
+        {
+            string hex = value.TrimStart('#');
+            if (hex.Length == 8) hex = hex.Substring(2);
+            return ColorTranslator.ToOle(ColorTranslator.FromHtml("#" + hex));
+        }
+    }
+}

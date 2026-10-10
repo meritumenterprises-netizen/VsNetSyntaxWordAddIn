@@ -1,0 +1,21 @@
+<Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" />
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <AssemblyName>SmokeTests</AssemblyName>
+    <OutputPath>bin\</OutputPath>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="ColorCode.Core"><HintPath>..\bin\Debug\ColorCode.Core.dll</HintPath></Reference>
+    <Reference Include="Microsoft.Office.Interop.Word, Version=15.0.0.0, Culture=neutral, PublicKeyToken=71e9bce111e9429c"><EmbedInteropTypes>true</EmbedInteropTypes></Reference>
+    <Compile Include="SmokeTests.cs" />
+    <Compile Include="..\Highlighting\SyntaxHighlighter.cs"><Link>SyntaxHighlighter.cs</Link></Compile>
+    <Compile Include="..\WordSelectionFormatter.cs"><Link>WordSelectionFormatter.cs</Link></Compile>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>
