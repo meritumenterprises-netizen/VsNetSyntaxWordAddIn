@@ -9,7 +9,7 @@ Install Visual Studio with the Office/SharePoint development workload and deskto
 1. Run `pwsh -NoProfile -File tools/Run.ps1` to generate a local development signing certificate, restore packages, build signed VSTO manifests, register the add-in for your Windows account, and launch a new Word instance.
 2. For debugging, open `VsNetSyntaxWordAddIn.sln` from its current folder in Visual Studio. After moving the project, reopen this solution so Visual Studio uses the new paths.
 3. Press F5 to register the development add-in and launch Word.
-4. Select plain code text. In the **VS.NET Syntax** tab, choose **C#**, **HTML**, **TypeScript**, or **JavaScript** from **Syntax Highlight**. Changing the language applies formatting immediately.
+4. Select plain code text. In the **VS.NET Syntax** tab, choose **C#**, **HTML**, **TypeScript**, or **JavaScript** from **Language**. Changing the language applies formatting immediately.
 5. Use **Apply** to format another selection with the current language.
 
 The **Theme** dropdown offers **Light** (the default) and **Dark** for language text colors. The **Background** dropdown offers **Normal** (the default, leaves existing background formatting untouched), **Red** (`#FED9B4`), and **Green** (`#EDF5E7`), with rectangular color swatches in the menu and on the closed control for the selected value. Office places dropdown images to the left; right-side images are not supported by this native control. Changing either dropdown immediately reformats the selection. Apply and keyboard shortcuts use both current settings. Background colors apply only to selected code, leaving the document page color unchanged.

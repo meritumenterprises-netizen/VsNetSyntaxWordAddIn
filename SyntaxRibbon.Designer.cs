@@ -74,7 +74,7 @@ namespace VsNetSyntaxWordAddIn
             this.SyntaxLanguage.Items.Add(ribbonDropDownItemImpl2);
             this.SyntaxLanguage.Items.Add(ribbonDropDownItemImpl3);
             this.SyntaxLanguage.Items.Add(ribbonDropDownItemImpl4);
-            this.SyntaxLanguage.Label = "Syntax Highlight";
+            this.SyntaxLanguage.Label = "Language";
             this.SyntaxLanguage.Name = "SyntaxLanguage";
             this.SyntaxLanguage.SizeString = "TypeScript  ";
             this.SyntaxLanguage.SelectionChanged += new Microsoft.Office.Tools.Ribbon.RibbonControlEventHandler(this.OnLanguageSelected);

@@ -5,7 +5,7 @@
       <tab id="VsNetSyntaxTab" label="VS.NET Syntax">
         <group id="SyntaxGroup" label="Code">
           <button id="ApplySyntax" label="Apply" size="large" imageMso="FontColor" showImage="true" onAction="OnApply" screentip="Apply syntax highlighting" />
-          <dropDown id="SyntaxLanguage" label="Syntax Highlight" sizeString="TypeScript  " getSelectedItemIndex="GetSelectedLanguageIndex" onAction="OnLanguageSelected">
+          <dropDown id="SyntaxLanguage" label="Language" sizeString="TypeScript  " getSelectedItemIndex="GetSelectedLanguageIndex" onAction="OnLanguageSelected">
             <item id="CSharp" label="C#" />
             <item id="Html" label="HTML" />
             <item id="TypeScript" label="TypeScript" />
