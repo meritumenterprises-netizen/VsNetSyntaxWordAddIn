@@ -10,10 +10,14 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
     <Reference Include="ColorCode.Core"><HintPath>..\bin\Debug\ColorCode.Core.dll</HintPath></Reference>
     <Reference Include="Microsoft.Office.Interop.Word, Version=15.0.0.0, Culture=neutral, PublicKeyToken=71e9bce111e9429c"><EmbedInteropTypes>true</EmbedInteropTypes></Reference>
+    <Reference Include="Office, Version=15.0.0.0, Culture=neutral, PublicKeyToken=71e9bce111e9429c"><EmbedInteropTypes>true</EmbedInteropTypes></Reference>
     <Compile Include="SmokeTests.cs" />
+    <Compile Include="..\GlobalSyntaxShortcuts.cs"><Link>GlobalSyntaxShortcuts.cs</Link></Compile>
     <Compile Include="..\Highlighting\SyntaxHighlighter.cs"><Link>SyntaxHighlighter.cs</Link></Compile>
     <Compile Include="..\WordSelectionFormatter.cs"><Link>WordSelectionFormatter.cs</Link></Compile>
   </ItemGroup>

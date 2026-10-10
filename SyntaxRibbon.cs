@@ -1,41 +1,94 @@
 using System;
-using System.IO;
-using System.Reflection;
-using System.Runtime.InteropServices;
+using System.Drawing;
 using System.Windows.Forms;
-using Office = Microsoft.Office.Core;
+using Microsoft.Office.Tools.Ribbon;
+using VsNetSyntaxWordAddIn.Highlighting;
 
 namespace VsNetSyntaxWordAddIn
 {
-    [ComVisible(true)]
-    public sealed class SyntaxRibbon : Office.IRibbonExtensibility
+    public partial class SyntaxRibbon
     {
         private int selectedLanguageIndex;
+        private SyntaxTheme selectedTheme;
+        private int selectedBackgroundIndex;
+        private static readonly int?[] BackgroundColors = { null, 0xB4D9FE, 0xD9EFE2 };
+        private Bitmap[] backgroundSwatches;
         private static readonly string[] LanguageIds = { "CSharp", "Html", "TypeScript", "JavaScript" };
 
-        public string GetCustomUI(string ribbonId)
+        private void SyntaxRibbon_Load(object sender, RibbonUIEventArgs e)
         {
-            using (var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("VsNetSyntaxWordAddIn.SyntaxRibbon.xml"))
-            using (var reader = new StreamReader(stream))
-                return reader.ReadToEnd();
+            if (backgroundSwatches == null)
+            {
+                backgroundSwatches = new Bitmap[BackgroundColors.Length];
+                for (int i = 0; i < BackgroundColors.Length; i++)
+                {
+                    var swatch = new Bitmap(16, 16);
+                    using (var graphics = Graphics.FromImage(swatch))
+                    {
+                        graphics.Clear(Color.Transparent);
+                        if (BackgroundColors[i].HasValue)
+                        {
+                            using (var brush = new SolidBrush(ColorTranslator.FromOle(BackgroundColors[i].Value)))
+                                graphics.FillRectangle(brush, 1, 3, 14, 10);
+                        }
+                        graphics.DrawRectangle(Pens.DimGray, 1, 3, 13, 9);
+                        if (!BackgroundColors[i].HasValue)
+                            graphics.DrawLine(Pens.DimGray, 2, 11, 13, 4);
+                    }
+                    backgroundSwatches[i] = swatch;
+                    SyntaxBackgroundDropDown.Items[i].Image = swatch;
+                }
+                Disposed += (s, args) =>
+                {
+                    foreach (var swatch in backgroundSwatches) swatch.Dispose();
+                };
+            }
+            SyntaxLanguage.SelectedItemIndex = selectedLanguageIndex;
+            SyntaxThemeDropDown.SelectedItemIndex = (int)selectedTheme;
+            SyntaxBackgroundDropDown.SelectedItemIndex = selectedBackgroundIndex;
         }
 
-        public int GetSelectedLanguageIndex(Office.IRibbonControl control) => selectedLanguageIndex;
-
-        public void OnLanguageSelected(Office.IRibbonControl control, string selectedId, int selectedIndex)
+        private void OnBackgroundSelected(object sender, RibbonControlEventArgs e)
         {
+            int index = SyntaxBackgroundDropDown.SelectedItemIndex;
+            if (index < 0 || index >= BackgroundColors.Length) return;
+            selectedBackgroundIndex = index;
+            Apply();
+        }
+
+        private void OnThemeSelected(object sender, RibbonControlEventArgs e)
+        {
+            int selectedIndex = SyntaxThemeDropDown.SelectedItemIndex;
+            if (selectedIndex < 0 || selectedIndex > 1) return;
+            selectedTheme = (SyntaxTheme)selectedIndex;
+            Apply();
+        }
+
+        internal void ApplyLanguage(string languageId)
+        {
+            int index = Array.IndexOf(LanguageIds, languageId);
+            if (index < 0) throw new ArgumentException("Unsupported syntax language.", nameof(languageId));
+            selectedLanguageIndex = index;
+            SyntaxLanguage.SelectedItemIndex = index;
+            Apply();
+        }
+
+        private void OnLanguageSelected(object sender, RibbonControlEventArgs e)
+        {
+            int selectedIndex = SyntaxLanguage.SelectedItemIndex;
             if (selectedIndex < 0 || selectedIndex >= LanguageIds.Length) return;
             selectedLanguageIndex = selectedIndex;
             Apply();
         }
 
-        public void OnApply(Office.IRibbonControl control) => Apply();
+        private void OnApply(object sender, RibbonControlEventArgs e) => Apply();
 
         private void Apply()
         {
             try
             {
-                WordSelectionFormatter.Format(Globals.ThisAddIn.Application, LanguageIds[selectedLanguageIndex]);
+                WordSelectionFormatter.Format(Globals.ThisAddIn.Application, LanguageIds[selectedLanguageIndex], selectedTheme,
+                    BackgroundColors[selectedBackgroundIndex]);
             }
             catch (Exception ex)
             {

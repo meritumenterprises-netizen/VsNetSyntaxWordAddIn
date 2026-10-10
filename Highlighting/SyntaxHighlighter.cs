@@ -2,11 +2,18 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using ColorCode;
+using ColorCode.Common;
 using ColorCode.Parsing;
 using ColorCode.Styling;
 
 namespace VsNetSyntaxWordAddIn.Highlighting
 {
+    public enum SyntaxTheme
+    {
+        Light,
+        Dark
+    }
+
     public sealed class HighlightSpan
     {
         public int Start { get; }
@@ -26,7 +33,20 @@ namespace VsNetSyntaxWordAddIn.Highlighting
         private int[] colors;
         private int position;
 
-        public SyntaxHighlighter() : base(StyleDictionary.DefaultLight, null) { }
+        public SyntaxHighlighter(SyntaxTheme theme = SyntaxTheme.Light) : base(GetStyles(theme), null) { }
+
+        public int ForegroundColor => ToWordColor(Styles[ScopeName.PlainText].Foreground);
+        public int BackgroundColor => ToWordColor(Styles[ScopeName.PlainText].Background);
+
+        private static StyleDictionary GetStyles(SyntaxTheme theme)
+        {
+            switch (theme)
+            {
+                case SyntaxTheme.Light: return StyleDictionary.DefaultLight;
+                case SyntaxTheme.Dark: return StyleDictionary.DefaultDark;
+                default: throw new ArgumentOutOfRangeException(nameof(theme));
+            }
+        }
 
         public IReadOnlyList<HighlightSpan> Highlight(string text, string languageId)
         {
@@ -42,6 +62,8 @@ namespace VsNetSyntaxWordAddIn.Highlighting
             }
 
             colors = new int[text.Length];
+            int foreground = ForegroundColor;
+            for (int i = 0; i < colors.Length; i++) colors[i] = foreground;
             position = 0;
             // Word paragraph and manual line breaks must retain their original offsets.
             var source = text.Replace('\r', '\n').Replace('\v', '\n');

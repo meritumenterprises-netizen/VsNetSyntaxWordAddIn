@@ -7,7 +7,8 @@ namespace VsNetSyntaxWordAddIn
 {
     internal static class WordSelectionFormatter
     {
-        internal static void Format(Word.Application application, string languageId)
+        internal static void Format(Word.Application application, string languageId, SyntaxTheme theme = SyntaxTheme.Light,
+            int? backgroundColor = null)
         {
             if (application.Documents.Count == 0) throw new InvalidOperationException("Open a document and select a code block.");
             var selection = application.Selection;
@@ -31,7 +32,8 @@ namespace VsNetSyntaxWordAddIn
                 if (range.Document.ProtectionType != Word.WdProtectionType.wdNoProtection)
                     throw new InvalidOperationException("The document is protected. Remove protection before formatting code.");
 
-                var spans = new SyntaxHighlighter().Highlight(text, languageId);
+                var highlighter = new SyntaxHighlighter(theme);
+                var spans = highlighter.Highlight(text, languageId);
                 int start = range.Start;
                 application.UndoRecord.StartCustomRecord("Syntax highlighting");
                 undoStarted = true;
@@ -44,17 +46,20 @@ namespace VsNetSyntaxWordAddIn
                     font.Bold = 0;
                     font.Italic = 0;
                     font.Underline = Word.WdUnderline.wdUnderlineNone;
-                    font.Color = Word.WdColor.wdColorBlack;
+                    font.Color = (Word.WdColor)highlighter.ForegroundColor;
                 }
                 finally { Marshal.ReleaseComObject(font); }
-                range.HighlightColorIndex = Word.WdColorIndex.wdNoHighlight;
-                var shading = range.Shading;
-                try
+                if (backgroundColor.HasValue)
                 {
-                    shading.Texture = Word.WdTextureIndex.wdTextureNone;
-                    shading.BackgroundPatternColor = Word.WdColor.wdColorWhite;
+                    range.HighlightColorIndex = Word.WdColorIndex.wdNoHighlight;
+                    var shading = range.Shading;
+                    try
+                    {
+                        shading.Texture = Word.WdTextureIndex.wdTextureNone;
+                        shading.BackgroundPatternColor = (Word.WdColor)backgroundColor.Value;
+                    }
+                    finally { Marshal.ReleaseComObject(shading); }
                 }
-                finally { Marshal.ReleaseComObject(shading); }
 
                 tokenRange = range.Duplicate;
                 foreach (var span in spans)
