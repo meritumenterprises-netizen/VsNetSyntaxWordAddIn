@@ -1,3 +1,35 @@
+# VS.NET Add-In for Word
+
+The add-in creates a VS.NET Syntax tab in the Word ribbon for formatting code snippets in C#, HTML, TypeScript, and JavaScript. It uses Roslyn for C# and Serenity.TypeScript for TypeScript to parse and highlight syntax. The add-in is built with VSTO targeting .NET Framework 4.8 and does not require Office.js or a web server.
+
+The add-in looks like below:
+
+Language dropdown: 
+| Language |
+| C# 12 |
+| JavaScript |
+| TypeScript | 
+| HTML |
+
+
+| Theme | Description |
+| -- | -- |
+| Light | Light theme from VS.NET 2026 |
+| Dark | Dark theme from VS.NET 2026 |
+
+
+| Background | Description |
+| Normal | No change in background color |
+| Red | Light-red background (used for incorrect code) |
+| Green | Light-green background (used for correct code |
+
+Runtime formatting is performed by either selections from the VS.NET Syntax Ribbon tab, or by using keyboard shortcuts:
+| Keyboard shortcut | Meaning |
+| Ctrl+Alt+Shift+C | Format text as C# 12 syntax, use background color from the VS.NET Syntax Ribbon tab |
+| Ctrl+Alt+Shift+T | Format text as TypeScript syntax, use background color from the VS.NET Syntax Ribbon tab |
+| Ctrl+Alt+Shift+J | Format text as JavaScript syntax, use background color from the VS.NET Syntax Ribbon tab |
+| Ctrl+Alt+Shift+H | Format text as HTML syntax, use background color from the VS.NET Syntax Ribbon tab |
+
 # VS.NET Syntax Word Add-in
 
 Native C# VSTO add-in for desktop Microsoft Word on Windows, targeting .NET Framework 4.8. No Office.js, browser, or web server is required.
