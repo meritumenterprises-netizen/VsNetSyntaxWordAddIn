@@ -6,10 +6,13 @@
         <group id="SyntaxGroup" label="Code">
           <button id="ApplySyntax" label="Apply" size="large" imageMso="FontColor" showImage="true" onAction="OnApply" screentip="Apply syntax highlighting" />
           <dropDown id="SyntaxLanguage" label="Language" sizeString="TypeScript  " getSelectedItemIndex="GetSelectedLanguageIndex" onAction="OnLanguageSelected">
+            <item id="Angular" label="Angular" />
             <item id="CSharp" label="C#" />
             <item id="Html" label="HTML" />
-            <item id="TypeScript" label="TypeScript" />
             <item id="JavaScript" label="JavaScript" />
+            <item id="Json" label="JSON" />
+            <item id="TypeScript" label="TypeScript" />
+            <item id="Xml" label="XML" />
           </dropDown>
           <dropDown id="SyntaxTheme" label="Theme" sizeString="Light  " getSelectedItemIndex="GetSelectedThemeIndex" onAction="OnThemeSelected">
             <item id="LightTheme" label="Light" />

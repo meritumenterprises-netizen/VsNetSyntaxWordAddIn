@@ -40,6 +40,8 @@ namespace VsNetSyntaxWordAddIn.Highlighting
         private bool darkRedHtmlTags;
         private bool boldAngularSyntax;
         private bool boldKeywords;
+        private bool xmlColors;
+        private bool jsonColors;
         private readonly SyntaxTheme theme;
 
         public SyntaxHighlighter(SyntaxTheme theme = SyntaxTheme.Light) : base(GetStyles(theme), null) { this.theme = theme; }
@@ -73,6 +75,8 @@ namespace VsNetSyntaxWordAddIn.Highlighting
                 case "Angular": language = AngularHtmlLanguage.Instance; break;
                 case "TypeScript": language = Languages.Typescript; break;
                 case "JavaScript": language = Languages.JavaScript; break;
+                case "Json": language = Languages.FindById("json"); break;
+                case "Xml": language = XmlSyntaxLanguage.Instance; break;
                 default: throw new ArgumentException("Unsupported language.", nameof(languageId));
             }
 
@@ -82,11 +86,16 @@ namespace VsNetSyntaxWordAddIn.Highlighting
             darkRedHtmlTags = languageId == "Html";
             boldAngularSyntax = languageId == "Angular";
             boldKeywords = emphasizeKeywords || boldAngularSyntax;
-            int foreground = ForegroundColor;
+            xmlColors = languageId == "Xml";
+            jsonColors = languageId == "Json";
+            int foreground = xmlColors ? ToWordColor("#0000FF") : ForegroundColor;
             for (int i = 0; i < colors.Length; i++) colors[i] = foreground;
             position = 0;
             // Word paragraph and manual line breaks must retain their original offsets.
             var source = text.Replace('\r', '\n').Replace('\v', '\n');
+            if (xmlColors)
+                source = source.Replace('\u201c', '"').Replace('\u201d', '"')
+                    .Replace('\u2018', '\'').Replace('\u2019', '\'');
             if (languageId == "CSharp")
                 CSharpSyntaxHighlighter.Highlight(source, ApplyColor, ApplyBold);
             else
@@ -95,6 +104,7 @@ namespace VsNetSyntaxWordAddIn.Highlighting
                 if (position != text.Length) throw new InvalidOperationException("The highlighter did not preserve source offsets.");
                 if (languageId == "TypeScript") TypeScriptNameHighlighter.Highlight(source, ApplyBold);
                 if (languageId == "Angular") HighlightAngularFragments(source);
+                if (xmlColors) HighlightXmlAttributes(source);
             }
 
             var spans = new List<HighlightSpan>();
@@ -106,6 +116,28 @@ namespace VsNetSyntaxWordAddIn.Highlighting
                 start = end;
             }
             return spans;
+        }
+
+        private void HighlightXmlAttributes(string source)
+        {
+            // Repeated empty captures in ColorCode can hide earlier attribute values.
+            foreach (Match match in Regex.Matches(source,
+                @"<!--[\s\S]*?(?:-->|$)|<!\[CDATA\[[\s\S]*?(?:\]\]>|$)|" +
+                @"(?<tag></?[\w:.-]+(?:\s+[\w:.-]+\s*=\s*(?:""[^""]*""|'[^']*'))*\s*/?>)"))
+            {
+                Group tag = match.Groups["tag"];
+                if (!tag.Success) continue;
+                foreach (Match attribute in Regex.Matches(tag.Value,
+                    @"(?<name>[\w:.-]+)\s*=\s*(?:""(?<value>[^""]*)""|'(?<value>[^']*)')"))
+                {
+                    Group name = attribute.Groups["name"];
+                    Group value = attribute.Groups["value"];
+                    int nameColor = ToWordColor("#8B0000");
+                    int valueColor = ToWordColor("#FF0000");
+                    for (int i = 0; i < name.Length; i++) colors[tag.Index + name.Index + i] = nameColor;
+                    for (int i = 0; i < value.Length; i++) colors[tag.Index + value.Index + i] = valueColor;
+                }
+            }
         }
 
         private void HighlightAngularFragments(string source)
@@ -138,7 +170,17 @@ namespace VsNetSyntaxWordAddIn.Highlighting
 
         protected override void Write(string parsedSourceCode, IList<Scope> scopes)
         {
-            foreach (var scope in scopes) ApplyScope(scope, parsedSourceCode.Length);
+            foreach (var scope in scopes)
+            {
+                ApplyScope(scope, parsedSourceCode.Length);
+                // Standalone XML entities belong to element text; entities in attributes stay in the value scope.
+                if (xmlColors && scope.Name == ScopeName.XmlAttribute && scope.Length > 0
+                    && parsedSourceCode[scope.Index] == '&')
+                {
+                    int color = ToWordColor("#0000FF");
+                    for (int i = scope.Index; i < scope.Index + scope.Length; i++) colors[position + i] = color;
+                }
+            }
             position += parsedSourceCode.Length;
         }
 
@@ -148,6 +190,8 @@ namespace VsNetSyntaxWordAddIn.Highlighting
                 throw new InvalidOperationException("The parser produced an invalid token range.");
             if (boldHtmlTags && (scope.Name == ScopeName.HtmlElementName || scope.Name == ScopeName.HtmlTagDelimiter))
                 ApplyBold(position + scope.Index, scope.Length);
+            if (xmlColors && scope.Name == ScopeName.XmlName)
+                ApplyBold(position + scope.Index, scope.Length);
             if ((boldAngularSyntax && scope.Name == ScopeName.HtmlAttributeName) ||
                 (boldKeywords && scope.Name == ScopeName.Keyword))
                 ApplyBold(position + scope.Index, scope.Length);
@@ -155,6 +199,17 @@ namespace VsNetSyntaxWordAddIn.Highlighting
             {
                 string foreground = darkRedHtmlTags && scope.Name == ScopeName.HtmlElementName
                     ? "#8B0000" : Styles[scope.Name].Foreground;
+                if (xmlColors && (scope.Name == ScopeName.XmlName || scope.Name == ScopeName.XmlAttribute))
+                    foreground = "#8B0000";
+                if (xmlColors && scope.Name == ScopeName.XmlAttributeValue)
+                    foreground = "#FF0000";
+                if (xmlColors && scope.Name == ScopeName.XmlCDataSection)
+                    foreground = "#0000FF";
+                if (jsonColors && scope.Name == ScopeName.JsonKey)
+                    foreground = "#0000FF";
+                if (jsonColors && (scope.Name == ScopeName.JsonString
+                    || scope.Name == ScopeName.JsonNumber || scope.Name == ScopeName.JsonConst))
+                    foreground = "#FF0000";
                 if (!string.IsNullOrEmpty(foreground))
                 {
                     int color = ToWordColor(foreground);
@@ -186,7 +241,8 @@ namespace VsNetSyntaxWordAddIn.Highlighting
 
         private static int ToWordColor(string value)
         {
-            string hex = value.TrimStart('#');
+            // Some ColorCode XML styles contain an extra '#' after the alpha byte.
+            string hex = value.Replace("#", "");
             if (hex.Length == 8) hex = hex.Substring(2);
             return ColorTranslator.ToOle(ColorTranslator.FromHtml("#" + hex));
         }

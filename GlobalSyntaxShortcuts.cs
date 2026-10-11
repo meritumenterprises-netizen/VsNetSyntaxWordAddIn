@@ -19,7 +19,7 @@ namespace VsNetSyntaxWordAddIn
     {
         private const uint ShortcutModifiers = 0x0001 | 0x0002 | 0x0004; // Alt + Ctrl + Shift; Ctrl+Alt belongs to Word.
         private const uint Modifiers = ShortcutModifiers | 0x4000;
-        private static readonly uint[] Keys = { 0x43, 0x4A, 0x54, 0x48, 0x41 };
+        private static readonly uint[] Keys = { 0x43, 0x4A, 0x54, 0x48, 0x41, 0x53, 0x58 };
         private readonly bool[] registered = new bool[Keys.Length];
         private readonly Action<string> apply;
         private readonly Func<bool> wordActive;
@@ -119,6 +119,8 @@ namespace VsNetSyntaxWordAddIn
                 case 0x54: return "TypeScript";
                 case 0x48: return "Html";
                 case 0x41: return "Angular";
+                case 0x53: return "Json";
+                case 0x58: return "Xml";
                 default: throw new ArgumentOutOfRangeException(nameof(key));
             }
         }

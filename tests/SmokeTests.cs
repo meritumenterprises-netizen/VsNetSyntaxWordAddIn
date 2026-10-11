@@ -19,6 +19,10 @@ internal static class SmokeTests
             Check("Html", "<div class=\"test\">hello &amp; world</div>\r<!-- comment -->");
             Check("TypeScript", "interface Person { name: string; }\rconst p: Person = { name: 'test' };");
             Check("JavaScript", "const value = \"test\";\r// comment\vconsole.log(value);");
+            Check("Json", "{\r\"name\": \"test\", \"count\": -1.25e+2, \"enabled\": true, \"items\": [null, false]}\v");
+            Check("Xml", "<?xml version=\"1.0\"?>\r<root id=\"test\"><item>hello &amp; world</item></root>\v<!-- comment -->");
+            CheckStructuredDataColors();
+            CheckXmlAttributes();
             Check("CSharp", "");
             Check("JavaScript", "// \uD83D\uDE00\rconst s = 'Za\u017C\u00F3\u0142\u0107';\r\n");
             CheckThemeColors();
@@ -29,6 +33,7 @@ internal static class SmokeTests
             if (!args.Contains("--skip-shortcuts")) CheckShortcuts();
             else Console.WriteLine("Shortcut registration checks skipped (hotkeys may be owned by a running Word instance).");
             if (args.Contains("--word")) CheckWord();
+            if (args.Contains("--xml-word")) CheckXmlWord();
             if (args.Contains("--shortcut-input")) CheckShortcutInput();
             Console.WriteLine("All smoke tests passed.");
             return 0;
@@ -78,6 +83,127 @@ internal static class SmokeTests
     }
 
     private static int Ole(string color) => ColorTranslator.ToOle(ColorTranslator.FromHtml(color));
+
+    private static void CheckStructuredDataColors()
+    {
+        const string json = "{\r\"name\": \"true \\\"quoted\\\" \\u0041\", \"count\": -1.25e+2, \"enabled\": true, \"items\": [null, false]}\v";
+        const string xml = "<?xml version=\"1.0\"?>\r<root id=\"test\"><item>hello &amp; world</item><![CDATA[<raw>]]></root>\v<!-- <ignored/> -->";
+        foreach (SyntaxTheme theme in Enum.GetValues(typeof(SyntaxTheme)))
+        {
+            var styles = theme == SyntaxTheme.Dark
+                ? ColorCode.Styling.StyleDictionary.DefaultDark : ColorCode.Styling.StyleDictionary.DefaultLight;
+            Func<string, int> scopeColor = scope =>
+            {
+                string value = styles[scope].Foreground;
+                return Ole("#" + value.Substring(value.Length - 6));
+            };
+            var highlighter = new SyntaxHighlighter(theme);
+            var jsonSpans = highlighter.Highlight(json, "Json");
+            Assert(ColorAt(jsonSpans, json.IndexOf("name", StringComparison.Ordinal)) == Ole("#0000FF"),
+                "JSON: property name color incorrect");
+            Assert(ColorAt(jsonSpans, json.IndexOf("quoted", StringComparison.Ordinal)) == Ole("#FF0000"),
+                "JSON: escaped string color incorrect");
+            int number = json.IndexOf("-1.25e+2", StringComparison.Ordinal);
+            for (int i = number; i < number + 8; i++)
+                Assert(ColorAt(jsonSpans, i) == Ole("#FF0000"), "JSON: exponent number color incorrect");
+            foreach (string literal in new[] { "true", "null", "false" })
+                Assert(ColorAt(jsonSpans, json.LastIndexOf(literal, StringComparison.Ordinal)) == Ole("#FF0000"),
+                    "JSON: constant color incorrect: " + literal);
+            Assert(ColorAt(jsonSpans, json.IndexOf("true", StringComparison.Ordinal)) == Ole("#FF0000"),
+                "JSON: constant inside a string recolored");
+            foreach (string key in new[] { "name", "count", "enabled", "items" })
+                Assert(ColorAt(jsonSpans, json.IndexOf(key, StringComparison.Ordinal)) == Ole("#0000FF"),
+                    "JSON: property name is not blue: " + key);
+            var xmlSpans = highlighter.Highlight(xml, "Xml");
+            Assert(ColorAt(xmlSpans, xml.IndexOf("root", StringComparison.Ordinal)) == Ole("#8B0000"),
+                "XML: element name color incorrect");
+            Assert(ColorAt(xmlSpans, xml.IndexOf("id=", StringComparison.Ordinal)) == Ole("#8B0000"),
+                "XML: attribute name color incorrect");
+            Assert(ColorAt(xmlSpans, xml.IndexOf("test", StringComparison.Ordinal)) == Ole("#FF0000"),
+                "XML: attribute value color incorrect");
+            Assert(ColorAt(xmlSpans, xml.IndexOf("raw", StringComparison.Ordinal)) == Ole("#0000FF"),
+                "XML: CDATA color incorrect");
+            foreach (string text in new[] { "hello", "&amp;", "world" })
+                Assert(ColorAt(xmlSpans, xml.IndexOf(text, StringComparison.Ordinal)) == Ole("#0000FF"),
+                    "XML: element text is not blue: " + text);
+            const string attributes = "<item first='hello &amp; world' second=\"blue\">red</item>";
+            var attributeSpans = highlighter.Highlight(attributes, "Xml");
+            foreach (int start in new[] { attributes.IndexOf("item", StringComparison.Ordinal), attributes.LastIndexOf("item", StringComparison.Ordinal) })
+                for (int i = start; i < start + 4; i++)
+                    Assert(ColorAt(attributeSpans, i) == Ole("#8B0000") && BoldAt(attributeSpans, i),
+                        "XML: opening/closing element names must be dark red and bold, including tags with attributes");
+            foreach (string name in new[] { "first", "second" })
+            {
+                int start = attributes.IndexOf(name, StringComparison.Ordinal);
+                for (int i = start; i < start + name.Length; i++)
+                    Assert(ColorAt(attributeSpans, i) == Ole("#8B0000") && !BoldAt(attributeSpans, i),
+                        "XML: attribute names must be dark red and regular weight");
+            }
+            foreach (string value in new[] { "hello", "&amp;", "world", "blue" })
+                Assert(ColorAt(attributeSpans, attributes.IndexOf(value, StringComparison.Ordinal)) == Ole("#FF0000"),
+                    "XML: quoted attribute value is not red: " + value);
+            Assert(ColorAt(attributeSpans, attributes.IndexOf(">red<", StringComparison.Ordinal) + 1) == Ole("#0000FF"),
+                "XML: text color confused with attribute value");
+            Assert(ColorAt(xmlSpans, xml.IndexOf("ignored", StringComparison.Ordinal)) == scopeColor(ColorCode.Common.ScopeName.HtmlComment),
+                "XML: comment content parsed as markup");
+            foreach (string value in new[] { "hello", "&amp;", "world", "blue", ">red<" })
+                Assert(!BoldAt(attributeSpans, attributes.IndexOf(value, StringComparison.Ordinal)),
+                    "XML: element bold leaked into attribute values or text");
+            Assert(!BoldAt(xmlSpans, xml.IndexOf("ignored", StringComparison.Ordinal))
+                && !BoldAt(xmlSpans, xml.IndexOf("raw", StringComparison.Ordinal)),
+                "XML: markup in comments or CDATA must not be bold");
+            Assert(jsonSpans.Sum(span => span.Length) == json.Length && xmlSpans.Sum(span => span.Length) == xml.Length,
+                "JSON/XML: paragraph and manual line-break offsets changed");
+            Assert(jsonSpans.All(span => !span.Bold), "JSON: XML bold rules applied");
+        }
+        Console.WriteLine("JSON/XML: token colors, escapes, constants, CDATA, comments, and offsets OK in both themes");
+    }
+
+    private static void CheckXmlAttributes()
+    {
+        foreach (SyntaxTheme theme in Enum.GetValues(typeof(SyntaxTheme)))
+        {
+            foreach (string source in new[] {
+                "<item first=\"\" second=\"value\">text</item>",
+                "<item first=\"value\" second=\"\">text</item>",
+                "<item first='' second='value'>text</item>",
+                "<item first=\"line1\rline2\" second=\"\">text</item>",
+                "<item\r first=\"\"\r second=\"value\" />",
+                "<item first=\u201dvalue\u201d second=\u201c\u201d>text</item>"
+            })
+            {
+                var spans = new SyntaxHighlighter(theme).Highlight(source, "Xml");
+                for (int i = 1; i < 5; i++)
+                    Assert(ColorAt(spans, i) == Ole("#8B0000") && BoldAt(spans, i),
+                        "XML: element with empty or multiline attributes is not dark red/bold: " + source);
+                foreach (string attribute in new[] { "first", "second" })
+                {
+                    int start = source.IndexOf(attribute, StringComparison.Ordinal);
+                    Assert(ColorAt(spans, start) == Ole("#8B0000") && !BoldAt(spans, start),
+                        "XML: attribute name has incorrect styling: " + source);
+                }
+                foreach (string value in new[] { "value", "line1", "line2" })
+                {
+                    int start = source.IndexOf(value, StringComparison.Ordinal);
+                    if (start >= 0)
+                        Assert(ColorAt(spans, start) == Ole("#FF0000") && !BoldAt(spans, start),
+                            "XML: attribute value has incorrect styling: " + source);
+                }
+                Assert(spans.Sum(span => span.Length) == source.Length, "XML: attribute offsets changed");
+            }
+            const string smartQuotes = "<a>\r\n<b>\r\n<c name=\u201dYYY\u201d/>\r\n</b>\r\n</a>";
+            var sampleSpans = new SyntaxHighlighter(theme).Highlight(smartQuotes, "Xml");
+            int element = smartQuotes.IndexOf("<c", StringComparison.Ordinal) + 1;
+            Assert(ColorAt(sampleSpans, element) == Ole("#8B0000") && BoldAt(sampleSpans, element),
+                "XML: user's smart-quote example element styling failed");
+            int sampleValue = smartQuotes.IndexOf("YYY", StringComparison.Ordinal);
+            for (int i = sampleValue; i < sampleValue + 3; i++)
+                Assert(ColorAt(sampleSpans, i) == Ole("#FF0000") && !BoldAt(sampleSpans, i),
+                    "XML: user's smart-quote example value styling failed");
+            Assert(sampleSpans.Sum(span => span.Length) == smartQuotes.Length, "XML: smart-quote normalization changed offsets");
+        }
+        Console.WriteLine("XML: empty/multiline attributes and self-closing elements OK in both themes");
+    }
 
     private static void CheckCSharp12()
     {
@@ -282,13 +408,15 @@ internal static class SmokeTests
         string applied = null;
         using (var shortcuts = new GlobalSyntaxShortcuts(language => applied = language, () => active))
         {
-            Assert(shortcuts.RegisteredCount == 5, "Shortcuts: native registration failed: " + shortcuts.Status);
+            Assert(shortcuts.RegisteredCount == 7, "Shortcuts: native registration failed: " + shortcuts.Status);
             foreach (var mapping in new[] {
                 new { Key = 0x43, Language = "CSharp" },
                 new { Key = 0x4A, Language = "JavaScript" },
                 new { Key = 0x54, Language = "TypeScript" },
                 new { Key = 0x48, Language = "Html" },
-                new { Key = 0x41, Language = "Angular" }
+                new { Key = 0x41, Language = "Angular" },
+                new { Key = 0x53, Language = "Json" },
+                new { Key = 0x58, Language = "Xml" }
             })
             {
                 SendMessage(shortcuts.Handle, 0x0312, new IntPtr(mapping.Key), new IntPtr((mapping.Key << 16) | 7));
@@ -306,10 +434,10 @@ internal static class SmokeTests
             Assert(shortcuts.RegisteredCount == 0, "Shortcuts: focus loss did not release hotkeys");
             active = true;
             shortcuts.Refresh();
-            Assert(shortcuts.RegisteredCount == 5, "Shortcuts: focus return did not register hotkeys");
+            Assert(shortcuts.RegisteredCount == 7, "Shortcuts: focus return did not register hotkeys");
         }
         using (var shortcuts = new GlobalSyntaxShortcuts(language => { }, () => true))
-            Assert(shortcuts.RegisteredCount == 5, "Shortcuts: disposal did not release hotkeys");
+            Assert(shortcuts.RegisteredCount == 7, "Shortcuts: disposal did not release hotkeys");
         Console.WriteLine("Shortcuts: native registration, dispatch, focus, and cleanup OK");
     }
 
@@ -459,6 +587,46 @@ internal static class SmokeTests
         }
     }
 
+    private static void CheckXmlWord()
+    {
+        var application = new Word.Application { Visible = false };
+        Word.Document document = null;
+        try
+        {
+            document = application.Documents.Add();
+            const string source = "<a>\r<b>\r<c name=\u201dYYY\u201d/>\r</b>\r</a>\r";
+            document.Content.Text = source;
+            foreach (SyntaxTheme theme in Enum.GetValues(typeof(SyntaxTheme)))
+            {
+                var range = document.Range(0, source.Length);
+                range.Select();
+                WordSelectionFormatter.Format(application, "Xml", theme);
+                int element = source.IndexOf("<c", StringComparison.Ordinal) + 1;
+                var elementRange = document.Range(element, element + 1);
+                Assert(elementRange.Font.Color == (Word.WdColor)Ole("#8B0000") && elementRange.Font.Bold == -1,
+                    "Word XML: c is not dark red and bold");
+                int attribute = source.IndexOf("name", StringComparison.Ordinal);
+                var attributeRange = document.Range(attribute, attribute + 4);
+                Assert(attributeRange.Font.Color == (Word.WdColor)Ole("#8B0000") && attributeRange.Font.Bold == 0,
+                    "Word XML: name is not dark red and regular weight");
+                int value = source.IndexOf("YYY", StringComparison.Ordinal);
+                var valueRange = document.Range(value, value + 3);
+                Assert(valueRange.Font.Color == (Word.WdColor)Ole("#FF0000") && valueRange.Font.Bold == 0,
+                    "Word XML: YYY is not red and regular weight");
+                Assert(range.Text == source && application.Selection.Range.Start == 0
+                    && application.Selection.Range.End == source.Length,
+                    "Word XML: smart quotes, text, or selection changed");
+                Assert(document.Undo(), "Word XML: grouped undo failed");
+            }
+            Console.WriteLine("Word XML: exact smart-quote sample colors, bold, original text, selection, and undo OK in both themes");
+        }
+        finally
+        {
+            if (document != null) document.Close(Word.WdSaveOptions.wdDoNotSaveChanges);
+            if (application.Documents.Count == 0) application.Quit(Word.WdSaveOptions.wdDoNotSaveChanges);
+        }
+    }
+
     private static void CheckShortcutInput()
     {
         IntPtr originalForeground = GetForegroundWindow();
@@ -476,13 +644,13 @@ internal static class SmokeTests
             IntPtr window = GetAncestor(new IntPtr(application.ActiveWindow.Hwnd), 2);
             Assert(SetForegroundWindow(window), "Shortcut input: could not activate temporary Word window");
             var registrationDeadline = DateTime.UtcNow.AddSeconds(5);
-            while (!((string)diagnostics.Status).StartsWith("Registered=5/5") && DateTime.UtcNow < registrationDeadline)
+            while (!((string)diagnostics.Status).StartsWith("Registered=7/7") && DateTime.UtcNow < registrationDeadline)
             {
                 System.Windows.Forms.Application.DoEvents();
                 Thread.Sleep(50);
             }
-            Assert(((string)diagnostics.Status).StartsWith("Registered=5/5"), "Shortcut input: hotkeys were not registered");
-            foreach (ushort key in new ushort[] { 0x43, 0x4A, 0x54, 0x48, 0x41 })
+            Assert(((string)diagnostics.Status).StartsWith("Registered=7/7"), "Shortcut input: hotkeys were not registered");
+            foreach (ushort key in new ushort[] { 0x43, 0x4A, 0x54, 0x48, 0x41, 0x53, 0x58 })
             {
                 var selection = document.Range(0, document.Content.End - 1);
                 selection.Font.Name = "Courier New";

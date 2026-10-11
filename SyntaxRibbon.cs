@@ -8,12 +8,12 @@ namespace VsNetSyntaxWordAddIn
 {
     public partial class SyntaxRibbon
     {
-        private int selectedLanguageIndex;
+        private int selectedLanguageIndex = 1;
         private SyntaxTheme selectedTheme;
         private int selectedBackgroundIndex;
         private static readonly int?[] BackgroundColors = { null, 0xB4D9FE, 0xE7F5ED };
         private Bitmap[] backgroundSwatches;
-        private static readonly string[] LanguageIds = { "CSharp", "Html", "TypeScript", "JavaScript", "Angular" };
+        private static readonly string[] LanguageIds = { "Angular", "CSharp", "Html", "JavaScript", "Json", "TypeScript", "Xml" };
 
         private void SyntaxRibbon_Load(object sender, RibbonUIEventArgs e)
         {

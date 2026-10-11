@@ -107,6 +107,7 @@
     <None Include="SyntaxRibbon.xml" />
     <Compile Include="Highlighting\SyntaxHighlighter.cs" />
     <Compile Include="Highlighting\AngularHtmlLanguage.cs" />
+    <Compile Include="Highlighting\XmlSyntaxLanguage.cs" />
     <Compile Include="Highlighting\CSharpSyntaxHighlighter.cs" />
     <Compile Include="Highlighting\TypeScriptNameHighlighter.cs" />
     <Compile Include="WordSelectionFormatter.cs" />

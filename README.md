@@ -1,6 +1,6 @@
-# Microsoft Word Add-In for Syntax Coloring C#, JavaScript, TypeScript, HTML and Angular
+# Microsoft Word Add-In for Syntax Coloring C#, JavaScript, TypeScript, HTML, Angular, JSON and XML
 
-The add-in creates a VS.NET Syntax tab in the Word ribbon for formatting code snippets in C#, HTML, TypeScript, and JavaScript. It uses Roslyn for C# and Serenity.TypeScript for TypeScript to parse and highlight syntax. The add-in is built with VSTO targeting .NET Framework 4.8 and does not require Office.js or a web server.
+The add-in creates a VS.NET Syntax tab in the Word ribbon for formatting code snippets in C#, HTML, TypeScript, JavaScript, Angular, JSON, and XML. It uses Roslyn for C# and Serenity.TypeScript for TypeScript to parse and highlight syntax. The add-in is built with VSTO targeting .NET Framework 4.8 and does not require Office.js or a web server.
 
 The add-in looks like below:
 
@@ -37,6 +37,8 @@ HTML
 Angular
 </td>
 </tr>
+<tr><td>JSON</td></tr>
+<tr><td>XML</td></tr>
 </table>
 
 Themes:
@@ -104,6 +106,14 @@ Runtime formatting is performed by either selections from the VS.NET Syntax Ribb
     <td>Ctrl+Alt+Shift+A</td>
     <td>Format text as Angular syntax, use background color from the VS.NET Syntax Ribbon tab</td>
   </tr>
+  <tr>
+    <td>Ctrl+Shift+Alt+S</td>
+    <td>Format text as JSON syntax, use background color from the VS.NET Syntax Ribbon tab</td>
+  </tr>
+  <tr>
+    <td>Ctrl+Shift+Alt+X</td>
+    <td>Format text as XML syntax, use background color from the VS.NET Syntax Ribbon tab</td>
+  </tr>
 </table>
 
 # VS.NET Syntax Word Add-in
@@ -117,7 +127,7 @@ Install Visual Studio with the Office/SharePoint development workload and deskto
 1. Run `pwsh -NoProfile -File tools/Run.ps1` to generate a local development signing certificate, restore packages, build signed VSTO manifests, register the add-in for your Windows account, and launch a new Word instance.
 2. For debugging, open `VsNetSyntaxWordAddIn.sln` from its current folder in Visual Studio. After moving the project, reopen this solution so Visual Studio uses the new paths.
 3. Press F5 to register the development add-in and launch Word.
-4. Select plain code text. In the **VS.NET Syntax** tab, choose **C#**, **HTML**, **TypeScript**, or **JavaScript** from **Language**. Changing the language applies formatting immediately.
+4. Select plain code text. In the **VS.NET Syntax** tab, choose **C#**, **HTML**, **TypeScript**, **JavaScript**, **Angular**, **JSON**, or **XML** from **Language**. Changing the language applies formatting immediately.
 5. Use **Apply** to format another selection with the current language.
 
 The **Theme** dropdown offers **Light** (the default) and **Dark** for language text colors. The **Background** dropdown offers **Normal** (the default, leaves existing background formatting untouched), **Red** (`#FED9B4`), and **Green** (`#EDF5E7`), with rectangular color swatches in the menu and on the closed control for the selected value. Office places dropdown images to the left; right-side images are not supported by this native control. Changing either dropdown immediately reformats the selection. Apply and keyboard shortcuts use both current settings. Background colors apply only to selected code, leaving the document page color unchanged.
@@ -130,7 +140,7 @@ Both left and right modifier keys work. Holding a shortcut applies it once per k
 
 C# uses Microsoft's Roslyn parser (`Microsoft.CodeAnalysis.CSharp` 4.8.0), configured for **C# 12**. It recognizes modern syntax including records, required/init members, primary constructors, collection expressions, raw and UTF-8 strings, and interpolated expressions. Contextual keywords are colored according to their parsed roles, not a word list. Incomplete snippets are handled by Roslyn's syntax recovery. This is syntax highlighting, not compilation or full project-aware semantic classification; symbols and external types are not resolved.
 
-ColorCode.Core 2.0.15 still supplies the HTML, TypeScript, and JavaScript grammars and the DefaultLight/DefaultDark palettes for all languages. Exact Visual Studio 2026 theme and semantic-color parity is not claimed.
+ColorCode.Core 2.0.15 supplies the HTML, TypeScript, JavaScript, JSON, and XML grammars and the DefaultLight/DefaultDark palettes for all languages. JSON colors distinguish keys, strings, numbers, and true/false/null constants. XML colors distinguish element names, attributes, values, delimiters, comments, entities, and CDATA. Exact Visual Studio 2026 theme and semantic-color parity is not claimed.
 
 ## Deployment
 
