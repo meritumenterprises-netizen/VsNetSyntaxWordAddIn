@@ -10,6 +10,8 @@ namespace VsNetSyntaxWordAddIn
         internal static void Format(Word.Application application, string languageId, SyntaxTheme theme = SyntaxTheme.Light,
             int? backgroundColor = null)
         {
+            if (theme == SyntaxTheme.Dark) backgroundColor = 0x000000;
+            else if (!backgroundColor.HasValue) backgroundColor = 0xFFFFFF;
             if (application.Documents.Count == 0) throw new InvalidOperationException("Open a document and select a code block.");
             var selection = application.Selection;
             Word.Range range = null;
