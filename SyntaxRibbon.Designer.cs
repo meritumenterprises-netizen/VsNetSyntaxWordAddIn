@@ -32,6 +32,7 @@ namespace VsNetSyntaxWordAddIn
             Microsoft.Office.Tools.Ribbon.RibbonDropDownItem angularLanguage = this.Factory.CreateRibbonDropDownItem();
             Microsoft.Office.Tools.Ribbon.RibbonDropDownItem jsonLanguage = this.Factory.CreateRibbonDropDownItem();
             Microsoft.Office.Tools.Ribbon.RibbonDropDownItem xmlLanguage = this.Factory.CreateRibbonDropDownItem();
+            Microsoft.Office.Tools.Ribbon.RibbonDropDownItem sqlLanguage = this.Factory.CreateRibbonDropDownItem();
             this.VsNetSyntaxTab = this.Factory.CreateRibbonTab();
             this.SyntaxGroup = this.Factory.CreateRibbonGroup();
             this.ApplySyntax = this.Factory.CreateRibbonButton();
@@ -80,6 +81,8 @@ namespace VsNetSyntaxWordAddIn
             this.SyntaxLanguage.Items.Add(ribbonDropDownItemImpl4);
             jsonLanguage.Label = "JSON";
             this.SyntaxLanguage.Items.Add(jsonLanguage);
+            sqlLanguage.Label = "SQL";
+            this.SyntaxLanguage.Items.Add(sqlLanguage);
             this.SyntaxLanguage.Items.Add(ribbonDropDownItemImpl3);
             xmlLanguage.Label = "XML";
             this.SyntaxLanguage.Items.Add(xmlLanguage);

@@ -77,6 +77,7 @@ namespace VsNetSyntaxWordAddIn.Highlighting
                 case "JavaScript": language = Languages.JavaScript; break;
                 case "Json": language = Languages.FindById("json"); break;
                 case "Xml": language = XmlSyntaxLanguage.Instance; break;
+                case "Sql": language = Languages.Sql; break;
                 default: throw new ArgumentException("Unsupported language.", nameof(languageId));
             }
 
@@ -85,7 +86,7 @@ namespace VsNetSyntaxWordAddIn.Highlighting
             boldHtmlTags = languageId == "Html" || languageId == "Angular";
             darkRedHtmlTags = languageId == "Html";
             boldAngularSyntax = languageId == "Angular";
-            boldKeywords = emphasizeKeywords || boldAngularSyntax;
+            boldKeywords = emphasizeKeywords || boldAngularSyntax || languageId == "Sql";
             xmlColors = languageId == "Xml";
             jsonColors = languageId == "Json";
             int foreground = xmlColors ? ToWordColor("#0000FF") : ForegroundColor;

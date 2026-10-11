@@ -13,7 +13,7 @@ namespace VsNetSyntaxWordAddIn
         private int selectedBackgroundIndex;
         private static readonly int?[] BackgroundColors = { null, 0xB4D9FE, 0xE7F5ED };
         private Bitmap[] backgroundSwatches;
-        private static readonly string[] LanguageIds = { "Angular", "CSharp", "Html", "JavaScript", "Json", "TypeScript", "Xml" };
+        private static readonly string[] LanguageIds = { "Angular", "CSharp", "Html", "JavaScript", "Json", "Sql", "TypeScript", "Xml" };
 
         private void SyntaxRibbon_Load(object sender, RibbonUIEventArgs e)
         {

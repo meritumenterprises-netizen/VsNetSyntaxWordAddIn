@@ -22,6 +22,7 @@ internal static class SmokeTests
             Check("Json", "{\r\"name\": \"test\", \"count\": -1.25e+2, \"enabled\": true, \"items\": [null, false]}\v");
             Check("Xml", "<?xml version=\"1.0\"?>\r<root id=\"test\"><item>hello &amp; world</item></root>\v<!-- comment -->");
             CheckStructuredDataColors();
+            CheckSql();
             CheckXmlAttributes();
             Check("CSharp", "");
             Check("JavaScript", "// \uD83D\uDE00\rconst s = 'Za\u017C\u00F3\u0142\u0107';\r\n");
@@ -62,6 +63,29 @@ internal static class SmokeTests
                 Assert(spans.Any(s => s.Color != highlighter.ForegroundColor), language + ": no syntax colors");
             Console.WriteLine(language + " " + theme + ": offsets and colors OK");
         }
+    }
+
+    private static void CheckSql()
+    {
+        const string source = "select [Name], 'it''s SQL' from dbo.Users\rWHERE Id = 42; -- SELECT comment\v/* FROM comment */";
+        Check("Sql", source);
+        Check("Sql", "");
+        foreach (SyntaxTheme theme in Enum.GetValues(typeof(SyntaxTheme)))
+        {
+            var highlighter = new SyntaxHighlighter(theme);
+            var spans = highlighter.Highlight(source, "Sql");
+            foreach (string token in new[] { "select", "WHERE", "it''s SQL", "-- SELECT", "/* FROM" })
+                Assert(ColorAt(spans, source.IndexOf(token, StringComparison.Ordinal)) != highlighter.ForegroundColor,
+                    "SQL: token uncolored: " + token);
+            Assert(ColorAt(spans, source.IndexOf("WHERE", StringComparison.Ordinal)) !=
+                ColorAt(spans, source.IndexOf("-- SELECT", StringComparison.Ordinal)), "SQL: comment colored as keyword");
+            foreach (string keyword in new[] { "select", "from", "WHERE" })
+                Assert(BoldAt(spans, source.IndexOf(keyword, StringComparison.Ordinal)), "SQL: keyword not bold: " + keyword);
+            foreach (string plain in new[] { "Name", "it''s SQL", "42", "-- SELECT", "/* FROM" })
+                Assert(!BoldAt(spans, source.IndexOf(plain, StringComparison.Ordinal)), "SQL: non-keyword incorrectly bold: " + plain);
+            Assert(highlighter.Highlight("const value = 1;", "JavaScript").All(s => !s.Bold), "SQL: bold leaked across languages");
+        }
+        Console.WriteLine("SQL: bold keywords, normal strings/comments and Word line-break offsets OK");
     }
 
     private static void CheckThemeColors()
@@ -408,7 +432,7 @@ internal static class SmokeTests
         string applied = null;
         using (var shortcuts = new GlobalSyntaxShortcuts(language => applied = language, () => active))
         {
-            Assert(shortcuts.RegisteredCount == 7, "Shortcuts: native registration failed: " + shortcuts.Status);
+            Assert(shortcuts.RegisteredCount == 8, "Shortcuts: native registration failed: " + shortcuts.Status);
             foreach (var mapping in new[] {
                 new { Key = 0x43, Language = "CSharp" },
                 new { Key = 0x4A, Language = "JavaScript" },
@@ -416,7 +440,8 @@ internal static class SmokeTests
                 new { Key = 0x48, Language = "Html" },
                 new { Key = 0x41, Language = "Angular" },
                 new { Key = 0x53, Language = "Json" },
-                new { Key = 0x58, Language = "Xml" }
+                new { Key = 0x58, Language = "Xml" },
+                new { Key = 0x51, Language = "Sql" }
             })
             {
                 SendMessage(shortcuts.Handle, 0x0312, new IntPtr(mapping.Key), new IntPtr((mapping.Key << 16) | 7));
@@ -434,10 +459,10 @@ internal static class SmokeTests
             Assert(shortcuts.RegisteredCount == 0, "Shortcuts: focus loss did not release hotkeys");
             active = true;
             shortcuts.Refresh();
-            Assert(shortcuts.RegisteredCount == 7, "Shortcuts: focus return did not register hotkeys");
+            Assert(shortcuts.RegisteredCount == 8, "Shortcuts: focus return did not register hotkeys");
         }
         using (var shortcuts = new GlobalSyntaxShortcuts(language => { }, () => true))
-            Assert(shortcuts.RegisteredCount == 7, "Shortcuts: disposal did not release hotkeys");
+            Assert(shortcuts.RegisteredCount == 8, "Shortcuts: disposal did not release hotkeys");
         Console.WriteLine("Shortcuts: native registration, dispatch, focus, and cleanup OK");
     }
 
@@ -644,13 +669,13 @@ internal static class SmokeTests
             IntPtr window = GetAncestor(new IntPtr(application.ActiveWindow.Hwnd), 2);
             Assert(SetForegroundWindow(window), "Shortcut input: could not activate temporary Word window");
             var registrationDeadline = DateTime.UtcNow.AddSeconds(5);
-            while (!((string)diagnostics.Status).StartsWith("Registered=7/7") && DateTime.UtcNow < registrationDeadline)
+            while (!((string)diagnostics.Status).StartsWith("Registered=8/8") && DateTime.UtcNow < registrationDeadline)
             {
                 System.Windows.Forms.Application.DoEvents();
                 Thread.Sleep(50);
             }
-            Assert(((string)diagnostics.Status).StartsWith("Registered=7/7"), "Shortcut input: hotkeys were not registered");
-            foreach (ushort key in new ushort[] { 0x43, 0x4A, 0x54, 0x48, 0x41, 0x53, 0x58 })
+            Assert(((string)diagnostics.Status).StartsWith("Registered=8/8"), "Shortcut input: hotkeys were not registered");
+            foreach (ushort key in new ushort[] { 0x43, 0x4A, 0x54, 0x48, 0x41, 0x53, 0x58, 0x51 })
             {
                 var selection = document.Range(0, document.Content.End - 1);
                 selection.Font.Name = "Courier New";
